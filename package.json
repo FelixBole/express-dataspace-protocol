@@ -1,0 +1,45 @@
+{
+	"name": "node-dataspace-protocol",
+	"version": "0.1.0",
+	"description": "Node.js implementation of the Dataspace Protocol (DSP)",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist/**/*"
+	],
+	"author": {
+		"name": "Felix Bole",
+		"url": "https://github.com/FelixBole"
+	},
+	"scripts": {
+		"build": "tsc",
+		"start": "node dist/index.js",
+		"dev": "ts-node src/index.ts",
+		"test": "jest --passWithNoTests",
+		"test:watch": "jest --watch",
+		"test:coverage": "jest --coverage",
+		"lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\""
+	},
+	"keywords": [
+		"dataspace",
+		"dsp",
+		"contract-negotiation",
+		"transfer-process",
+		"ids",
+		"idsa"
+	],
+	"license": "Apache-2.0",
+	"dependencies": {
+		"express": "^4.18.2"
+	},
+	"devDependencies": {
+		"@types/express": "^4.17.21",
+		"@types/jest": "^29.5.11",
+		"@types/node": "^20.11.5",
+		"@types/supertest": "^6.0.2",
+		"jest": "^29.7.0",
+		"supertest": "^6.3.4",
+		"ts-jest": "^29.1.2",
+		"typescript": "^5.3.3"
+	}
+}
