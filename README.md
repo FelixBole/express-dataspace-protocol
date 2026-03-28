@@ -10,6 +10,7 @@ This library handles the full HTTP layer for both the **Provider** and **Consume
 ## Table of Contents
 
 - [What is DSP?](#what-is-dsp)
+- [Architecture overview](#architecture-overview)
 - [Features](#features)
 - [Requirements](#requirements)
 - [Installation](#installation)
@@ -34,6 +35,54 @@ The **Eclipse Dataspace Protocol** is an open standard developed by initially by
 Plus a **Catalog Protocol** for advertising available DCAT datasets with ODRL-based access policies.
 
 This library implements DSP 2025-1 over HTTP. All state transitions, message shapes, and endpoint paths follow the specification exactly; your code only handles the business logic around those transitions.
+
+## Architecture overview
+
+```mermaid
+flowchart TD
+    subgraph provider_app["Provider connector (your app)"]
+        direction TB
+        pa["Your business logic<br>(hooks, policy engine)"]
+        pa_auth["Your auth middleware"]
+        pa_store[("Your storage<br>(DB / custom store)")]
+
+        subgraph provider_lib["express-dataspace-protocol  ·  createDspProvider()"]
+            direction LR
+            p_router["Express router<br>/.well-known<br>/catalog<br>/negotiations<br>/transfers"]
+            p_out["Provider-initiated helpers<br>sendAgreement()<br>startTransfer()<br>…"]
+        end
+
+        pa -- "hooks" --- p_router
+        pa -- "calls" --> p_out
+        pa_auth -. "auth middleware" .-> p_router
+        pa_store <-- "CatalogStore<br>NegotiationStore<br>TransferStore" --> provider_lib
+    end
+
+    net(["DSP over HTTPS"])
+
+    subgraph consumer_app["Consumer connector (your app)"]
+        direction TB
+        ca["Your business logic<br>(hooks, data pipeline)"]
+        ca_auth["Your auth middleware"]
+        ca_store[("Your storage<br>(DB / custom store)")]
+
+        subgraph consumer_lib["express-dataspace-protocol - createDspConsumer()"]
+            direction LR
+            c_router["Callback router<br>/negotiations/…<br>/transfers/…"]
+            c_out["Outbound client<br>requestNegotiation()<br>requestTransfer()<br>…"]
+        end
+
+        ca -- "hooks" --- c_router
+        ca -- "calls" --> c_out
+        ca_auth -. "auth middleware" .-> c_router
+        ca_store <-- "NegotiationStore<br>TransferStore" --> consumer_lib
+    end
+
+    p_router <-- "inbound DSP requests" --> net
+    p_out -- "outbound callbacks" --> net
+    net <-- "inbound callbacks" --> c_router
+    net -- "outbound requests" --> c_out
+```
 
 ## Features
 
@@ -78,7 +127,7 @@ import { createDspProvider, createDiskStore } from 'express-dataspace-protocol';
 const app = express();
 app.use(express.json());
 
-// Built-in disk store — swap for a real database in production (see Persistence)
+// Built-in disk store - swap for a real database in production (see Persistence)
 const store = await createDiskStore({ dir: './data' });
 
 const provider = createDspProvider({
@@ -93,7 +142,7 @@ const provider = createDspProvider({
   auth: jwtAuth,
 });
 
-// /.well-known/dspace-version  — always unauthenticated, per DSP §4.3
+// /.well-known/dspace-version  - always unauthenticated, per DSP §4.3
 app.use(provider.wellKnownRouter);
 // All protocol routes under your chosen base path
 app.use('/dsp', provider.router);
@@ -155,7 +204,7 @@ app.use(express.json());
 const store = await createDiskStore({ dir: './consumer-data' });
 
 const consumer = createDspConsumer({
-  // URL that Providers will call back on — must be publicly reachable
+  // URL that Providers will call back on - must be publicly reachable
   callbackAddress: 'https://my-connector.example.com/dsp/callback',
   store: {
     negotiation: store.negotiation,
@@ -203,6 +252,37 @@ const transfer = await consumer.transfer.requestTransfer(PROVIDER, {
 });
 ```
 
+#### Why the store is required for the Consumer
+
+The `store` is shared between two independent components inside `createDspConsumer`:
+
+- **Outbound client** (`consumer.negotiation.*`, `consumer.transfer.*`) -> writes a record after `requestNegotiation` / `requestTransfer`, and mirrors every subsequent state advancement locally after each successful outbound call.
+- **Callback router** (`consumer.callbackRouter`) -> looks up records by `consumerPid` when the Provider sends callbacks. If the record does not exist, it returns 404 and the flow breaks.
+
+```mermaid
+flowchart LR
+    subgraph app["Your Application"]
+        code[Your Code]
+        db[(Your Database)]
+    end
+
+    subgraph lib["createDspConsumer({store})"]
+        client["Outbound Client<br>consumer.negotiation.\*<br>consumer.transfer.*"]
+        router["Callback Router<br>consumer.callbackRouter"]
+    end
+
+    provider(["Provider"])
+
+    code --> client
+    client -- "write state" --> db
+    client -- "DSP messages" --> provider
+    provider -- "DSP callbacks" --> router
+    router -- "read / write state" --> db
+    router -. "hooks" .-> code
+```
+
+See [docs/usage.md](docs/usage.md#the-store-shared-state-between-outbound-calls-and-inbound-callbacks) for the full annotated sequence diagram showing every store read and write across a complete negotiation.
+
 ## Hook System
 
 Hooks let you run async business logic when the library processes an inbound message, without having to intercept HTTP directly. They are fire-and-forget, a hook error is logged but never disrupts the protocol response.
@@ -234,7 +314,7 @@ const consumer = createDspConsumer({
           );
         }
       },
-      // Provider approved — verify it to move to FINALIZED
+      // Provider approved - verify it to move to FINALIZED
       onAgreementReceived: async (negotiation) => {
         await consumer.negotiation.verifyAgreement(
           PROVIDER,
@@ -242,7 +322,7 @@ const consumer = createDspConsumer({
           negotiation.consumerPid
         );
       },
-      // Negotiation is now FINALIZED — time to request a transfer
+      // Negotiation is now FINALIZED - time to request a transfer
       onNegotiationFinalized: async (negotiation) => {
         await consumer.transfer.requestTransfer(PROVIDER, {
           agreementId: negotiation.agreement.id,
@@ -252,7 +332,7 @@ const consumer = createDspConsumer({
       },
     },
     transfer: {
-      // Provider started the data channel — begin consuming data
+      // Provider started the data channel - begin consuming data
       onTransferStarted: async (transfer) => {
         await dataPipeline.start(transfer.dataAddress);
       },
@@ -270,7 +350,7 @@ const provider = createDspProvider({
   getOutboundToken: async (url) => `Bearer ${tokenVault.getToken(url)}`,
   hooks: {
     negotiation: {
-      // A Consumer started a negotiation — decide whether to agree
+      // A Consumer started a negotiation - decide whether to agree
       onNegotiationRequested: async (negotiation) => {
         if (await policyEngine.shallApprove(negotiation)) {
           await provider.negotiation.sendAgreement(
@@ -285,7 +365,7 @@ const provider = createDspProvider({
       },
     },
     transfer: {
-      // A Consumer requested a transfer — provision the data channel
+      // A Consumer requested a transfer - provision the data channel
       onTransferRequested: async (transfer) => {
         const dataAddress = await channelService.provision(transfer);
         await provider.transfer.providerStartTransfer(
@@ -354,9 +434,9 @@ The library defines three store interfaces, `CatalogStore`, `NegotiationStore`, 
 import { createDiskStore } from 'express-dataspace-protocol';
 
 const store = await createDiskStore({ dir: './data' });
-// store.catalog — CatalogStore
-// store.negotiation — NegotiationStore
-// store.transfer — TransferStore
+// store.catalog - CatalogStore
+// store.negotiation - NegotiationStore
+// store.transfer - TransferStore
 ```
 
 > The disk store writes JSON files under `dir/`. It is single-process and not suitable for production.

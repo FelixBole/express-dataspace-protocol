@@ -4,11 +4,23 @@ import {
   TransferRequestMessage,
   TransferTerminationMessage,
   TransferSuspensionMessage,
+  TransferState,
 } from '../../types/transfer';
 import { DspClientError, CatalogClientDeps } from './catalog.client';
+import { TransferStore } from '../../store/interfaces';
 import { buildUrl, generateId } from '../../utils';
 
-export function makeTransferClient(deps: CatalogClientDeps) {
+export interface TransferClientDeps extends CatalogClientDeps {
+  /**
+   * Consumer-side transfer store.
+   * When provided, `requestTransfer` persists the outbound transfer so the
+   * callback router can look it up by consumerPid when the Provider sends
+   * start, completion, suspension, and termination messages.
+   */
+  store?: TransferStore;
+}
+
+export function makeTransferClient(deps: TransferClientDeps) {
   async function dspPost<T>(
     url: string,
     body: unknown,
@@ -54,11 +66,28 @@ export function makeTransferClient(deps: CatalogClientDeps) {
       ...(opts.dataAddress ? { dataAddress: opts.dataAddress } : {}),
     };
 
-    return dspPost<TransferProcess>(
+    const result = await dspPost<TransferProcess>(
       buildUrl(providerBaseUrl, '/transfers/request'),
       msg,
       deps.getOutboundToken
     );
+
+    // Persist the transfer in the Consumer's local store so the callback
+    // router can find it by consumerPid when the Provider sends back start,
+    // completion, suspension, and termination messages.
+    if (deps.store) {
+      await deps.store.create({
+        '@type': 'TransferProcess',
+        providerPid: result.providerPid,
+        consumerPid: msg.consumerPid,
+        state: TransferState.REQUESTED,
+        agreementId: opts.agreementId,
+        format: opts.format,
+        callbackAddress: opts.callbackAddress,
+      });
+    }
+
+    return result;
   }
 
   /**
@@ -79,6 +108,10 @@ export function makeTransferClient(deps: CatalogClientDeps) {
       },
       deps.getOutboundToken
     );
+
+    if (deps.store) {
+      await deps.store.update(providerPid, { state: TransferState.COMPLETED });
+    }
   }
 
   /**
@@ -102,6 +135,12 @@ export function makeTransferClient(deps: CatalogClientDeps) {
       msg,
       deps.getOutboundToken
     );
+
+    // SUSPENDED is the correct pre-condition state for a Consumer-initiated
+    // restart (TransferStartMessage) and for Provider-side restart callbacks.
+    if (deps.store) {
+      await deps.store.update(providerPid, { state: TransferState.SUSPENDED });
+    }
   }
 
   /**
@@ -125,6 +164,10 @@ export function makeTransferClient(deps: CatalogClientDeps) {
       msg,
       deps.getOutboundToken
     );
+
+    if (deps.store) {
+      await deps.store.update(providerPid, { state: TransferState.TERMINATED });
+    }
   }
 
   return { requestTransfer, completeTransfer, suspendTransfer, terminateTransfer };

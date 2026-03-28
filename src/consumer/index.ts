@@ -7,7 +7,6 @@ import { makeConsumerTransferRouter } from './routes/transfer.callback.routes';
 import { makeCatalogClient } from './client/catalog.client';
 import { makeNegotiationClient } from './client/negotiation.client';
 import { makeTransferClient } from './client/transfer.client';
-
 // ---------------------------------------------------------------------------
 // Options
 // ---------------------------------------------------------------------------
@@ -102,8 +101,8 @@ export function createDspConsumer(options: DspConsumerOptions): DspConsumer {
   return {
     callbackRouter,
     catalog: makeCatalogClient(clientDeps),
-    negotiation: makeNegotiationClient(clientDeps),
-    transfer: makeTransferClient(clientDeps),
+    negotiation: makeNegotiationClient({ ...clientDeps, store: options.store.negotiation }),
+    transfer: makeTransferClient({ ...clientDeps, store: options.store.transfer }),
     callbackAddress: options.callbackAddress,
   };
 }

@@ -9,6 +9,7 @@ This library implements the [Eclipse Dataspace Protocol (DSP) 2025-1](https://ec
 - [Concepts](#concepts)
 - [Setting up as a Provider](#setting-up-as-a-provider)
 - [Setting up as a Consumer](#setting-up-as-a-consumer)
+  - [The store: shared state between outbound calls and inbound callbacks](#the-store-shared-state-between-outbound-calls-and-inbound-callbacks)
 - [Dual-role connector (Provider + Consumer)](#dual-role-connector-provider--consumer)
 - [Authentication](#authentication)
   - [Securing inbound requests](#securing-inbound-requests)
@@ -207,6 +208,93 @@ const transfer = await consumer.transfer.requestTransfer(PROVIDER_BASE, {
   callbackAddress: consumer.callbackAddress,
 });
 ```
+
+### The store: shared state between outbound calls and inbound callbacks
+
+The `store` you pass to `createDspConsumer` serves **two independent components simultaneously**:
+
+| Component | Triggered by | What it does with the store |
+|---|---|---|
+| **Outbound client** (`consumer.negotiation.*`, `consumer.transfer.*`) | Your code | **Creates** a record after `requestNegotiation` / `requestTransfer`; **updates** state after every subsequent call that advances the protocol |
+| **Callback router** (`consumer.callbackRouter`) | Provider HTTP callbacks | **Reads** by `consumerPid` to validate the inbound message against the known state; **writes** the new post-transition state |
+
+When you call `requestNegotiation`, the client receives the Provider's `providerPid` and `consumerPid` from the response and saves them to the store. When the Provider later calls `/callback/negotiations/:consumerPid/offers`, the callback router looks up that record by `consumerPid`. If no record exists, it returns 404, breaking the entire flow.
+
+Every subsequent outbound call (`acceptNegotiation`, `verifyAgreement`, etc.) also mirrors its state advancement locally, so that every incoming Provider callback finds the exact pre-condition state it expects.
+
+```mermaid
+flowchart TD
+    subgraph app["Your Application"]
+        code[Your Code]
+        db[(Your Database)]
+    end
+
+    subgraph lib["createDspConsumer"]
+        client["Outbound Client<br>consumer.negotiation.\*<br>consumer.transfer.*"]
+        router["Callback Router<br>consumer.callbackRouter"]
+    end
+
+    provider(["Provider"])
+
+    code -- "requestNegotiation()<br>acceptNegotiation()<br>verifyAgreement()" --> client
+    client -- "create / update<br>state after each call" --> db
+    client -- "POST /negotiations/...<br>[DSP protocol messages]" --> provider
+
+    provider -- "POST /callback/negotiations/...<br>[DSP protocol callbacks]" --> router
+    router -- "findByConsumerPid()<br>update state" --> db
+    router -. "hook: onOfferReceived()<br>onAgreementReceived()<br>etc." .-> code
+```
+
+The following sequence diagram shows a complete CNP handshake annotated with every store read and write:
+
+```mermaid
+sequenceDiagram
+autonumber
+    participant S as Store (your DB)
+    participant App as Your Code
+    participant R as Callback Router
+    participant C as Outbound Client
+    participant P as Provider
+
+    App->>C: requestNegotiation(providerBase, { offer })
+    C->>P: POST /negotiations/request
+    P-->>C: { providerPid, consumerPid, state: REQUESTED }
+    C->>S: create({ providerPid, consumerPid, state: REQUESTED })
+    C-->>App: ContractNegotiation
+
+    Note over P,R: Provider evaluates offer and sends back a counter-offer
+    P->>R: POST /callback/negotiations/:consumerPid/offers
+    R->>S: findByConsumerPid(consumerPid) → state: REQUESTED ✓
+    R->>S: update(providerPid, { state: OFFERED, offer })
+    R-->>P: 200 OK
+    R--)App: hook: onOfferReceived(negotiation)
+
+    App->>C: acceptNegotiation(providerBase, providerPid, consumerPid)
+    C->>P: POST /negotiations/:providerPid/events { eventType: ACCEPTED }
+    P-->>C: 200 OK
+    C->>S: update(providerPid, { state: ACCEPTED })
+
+    Note over P,R: Provider sends the formal agreement
+    P->>R: POST /callback/negotiations/:consumerPid/agreement
+    R->>S: findByConsumerPid(consumerPid) → state: ACCEPTED ✓
+    R->>S: update(providerPid, { state: AGREED, agreement })
+    R-->>P: 200 OK
+    R--)App: hook: onAgreementReceived(negotiation)
+
+    App->>C: verifyAgreement(providerBase, providerPid, consumerPid)
+    C->>P: POST /negotiations/:providerPid/agreement/verification
+    P-->>C: 200 OK
+    C->>S: update(providerPid, { state: VERIFIED })
+
+    Note over P,R: Provider finalizes the negotiation
+    P->>R: POST /callback/negotiations/:consumerPid/events { eventType: FINALIZED }
+    R->>S: findByConsumerPid(consumerPid) → state: VERIFIED ✓
+    R->>S: update(providerPid, { state: FINALIZED })
+    R-->>P: 200 OK
+    R--)App: hook: onNegotiationFinalized(negotiation)
+```
+
+> **Rule:** if an outbound call succeeds (no `DspClientError`), the store is updated in the same call. If the HTTP request fails, the store is **not** updated — local state remains consistent with what the Provider last acknowledged.
 
 ---
 

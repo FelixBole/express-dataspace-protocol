@@ -4,11 +4,23 @@ import {
   ContractRequestMessage,
   ContractNegotiationTerminationMessage,
   MessageOffer,
+  NegotiationState,
 } from '../../types/negotiation';
 import { DspClientError, CatalogClientDeps } from './catalog.client';
+import { NegotiationStore } from '../../store/interfaces';
 import { buildUrl, generateId } from '../../utils';
 
-export function makeNegotiationClient(deps: CatalogClientDeps) {
+export interface NegotiationClientDeps extends CatalogClientDeps {
+  /**
+   * Consumer-side negotiation store.
+   * When provided, `requestNegotiation` persists the outbound negotiation so
+   * the callback router can look it up by consumerPid when the Provider
+   * sends counter-offers, agreements, and events.
+   */
+  store?: NegotiationStore;
+}
+
+export function makeNegotiationClient(deps: NegotiationClientDeps) {
   async function dspPost<T>(
     url: string,
     body: unknown,
@@ -55,11 +67,27 @@ export function makeNegotiationClient(deps: CatalogClientDeps) {
       callbackAddress: opts.callbackAddress,
     };
 
-    return dspPost<ContractNegotiation>(
+    const result = await dspPost<ContractNegotiation>(
       buildUrl(providerBaseUrl, '/negotiations/request'),
       msg,
       deps.getOutboundToken
     );
+
+    // Persist the negotiation in the Consumer's local store so the callback
+    // router can find it by consumerPid when the Provider sends back offers,
+    // agreements, and events.
+    if (deps.store) {
+      await deps.store.create({
+        '@type': 'ContractNegotiation',
+        providerPid: result.providerPid,
+        consumerPid: msg.consumerPid,
+        state: NegotiationState.REQUESTED,
+        offer: opts.offer,
+        callbackAddress: opts.callbackAddress,
+      });
+    }
+
+    return result;
   }
 
   /**
@@ -86,6 +114,13 @@ export function makeNegotiationClient(deps: CatalogClientDeps) {
       msg,
       deps.getOutboundToken
     );
+
+    // Return to REQUESTED state on the consumer side so that when the Provider
+    // sends another ContractOfferMessage, receiveOffer finds state REQUESTED
+    // (the only valid pre-condition for a provider counter-offer).
+    if (deps.store) {
+      await deps.store.update(providerPid, { state: NegotiationState.REQUESTED, offer });
+    }
   }
 
   /**
@@ -108,6 +143,13 @@ export function makeNegotiationClient(deps: CatalogClientDeps) {
       },
       deps.getOutboundToken
     );
+
+    // Advance consumer's local state OFFERED → ACCEPTED so that when the
+    // Provider sends ContractAgreementMessage, receiveAgreement finds the
+    // correct pre-condition state.
+    if (deps.store) {
+      await deps.store.update(providerPid, { state: NegotiationState.ACCEPTED });
+    }
   }
 
   /**
@@ -132,6 +174,13 @@ export function makeNegotiationClient(deps: CatalogClientDeps) {
       },
       deps.getOutboundToken
     );
+
+    // Advance consumer's local state AGREED → VERIFIED so that when the
+    // Provider sends ContractNegotiationEventMessage:FINALIZED, receiveEvent
+    // finds the correct pre-condition state.
+    if (deps.store) {
+      await deps.store.update(providerPid, { state: NegotiationState.VERIFIED });
+    }
   }
 
   /**
@@ -155,6 +204,10 @@ export function makeNegotiationClient(deps: CatalogClientDeps) {
       msg,
       deps.getOutboundToken
     );
+
+    if (deps.store) {
+      await deps.store.update(providerPid, { state: NegotiationState.TERMINATED });
+    }
   }
 
   return {
