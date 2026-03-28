@@ -61,7 +61,7 @@ const store = await createDiskStore({ dir: './data' });
 // 2. Create the provider
 const provider = createDspProvider({
   store,
-  // Public URL of this provider's DSP API — used in outbound protocol messages
+  // Public URL of this provider's DSP API - used in outbound protocol messages
   providerAddress: 'https://my-provider.example.com/dsp',
   // Token used when calling back to Consumers (e.g. after agreement / start transfer)
   getOutboundToken: async (consumerCallbackUrl) => {
@@ -70,7 +70,7 @@ const provider = createDspProvider({
 });
 
 // 3. Mount the routers
-//    The well-known endpoint MUST be at root (DSP §4.3 — unauthenticated, unversioned)
+//    The well-known endpoint MUST be at root (DSP §4.3 - unauthenticated, unversioned)
 app.use(provider.wellKnownRouter);
 //    All DSP protocol routes go under a versioned base path
 app.use('/dsp', provider.router);
@@ -104,8 +104,8 @@ This gives you:
 
 The Consumer has two distinct sides:
 
-- **Callback router** — an Express router that receives inbound messages from Providers (e.g. agreement notifications)
-- **Outbound clients** — typed helpers for making HTTP requests to Providers
+- **Callback router** - an Express router that receives inbound messages from Providers (e.g. agreement notifications)
+- **Outbound clients** - typed helpers for making HTTP requests to Providers
 
 ```typescript
 import express from 'express';
@@ -119,7 +119,7 @@ const store = await createDiskStore({ dir: './consumer-data' });
 
 // 2. Create the consumer
 const consumer = createDspConsumer({
-  // The URL that Providers will call back on — must be publicly reachable
+  // The URL that Providers will call back on - must be publicly reachable
   callbackAddress: 'https://my-connector.example.com/dsp/callback',
 
   store: {
@@ -131,14 +131,14 @@ const consumer = createDspConsumer({
   hooks: {
     negotiation: {
       onOfferReceived: async (negotiation) => {
-        // negotiation.offer has the Provider's terms — decide to accept or not
+        // negotiation.offer has the Provider's terms - decide to accept or not
         await consumer.negotiation.acceptNegotiation(PROVIDER_BASE, negotiation.providerPid, negotiation.consumerPid);
       },
       onAgreementReceived: async (negotiation) => {
         await consumer.negotiation.verifyAgreement(PROVIDER_BASE, negotiation.providerPid, negotiation.consumerPid);
       },
       onNegotiationFinalized: async (negotiation) => {
-        // negotiation.agreement is now live — persist or act on it
+        // negotiation.agreement is now live - persist or act on it
       },
     },
     transfer: {
@@ -294,7 +294,7 @@ autonumber
     R--)App: hook: onNegotiationFinalized(negotiation)
 ```
 
-> **Rule:** if an outbound call succeeds (no `DspClientError`), the store is updated in the same call. If the HTTP request fails, the store is **not** updated — local state remains consistent with what the Provider last acknowledged.
+> **Rule:** if an outbound call succeeds (no `DspClientError`), the store is updated in the same call. If the HTTP request fails, the store is **not** updated - local state remains consistent with what the Provider last acknowledged.
 
 ---
 
@@ -337,7 +337,7 @@ app.listen(443);
 
 ### Securing inbound requests
 
-Both `createDspProvider()` and `createDspConsumer()` accept an `auth` option — a standard Express `RequestHandler`. It is applied to every inbound route (except `/.well-known/dspace-version`, which is always unauthenticated per DSP §4.3).
+Both `createDspProvider()` and `createDspConsumer()` accept an `auth` option - a standard Express `RequestHandler`. It is applied to every inbound route (except `/.well-known/dspace-version`, which is always unauthenticated per DSP §4.3).
 
 **JWT Bearer token example:**
 
@@ -410,7 +410,7 @@ import { createDiskStore } from 'express-dataspace-protocol';
 
 const store = await createDiskStore({ dir: './dsp-data' });
 
-// Seed your catalog (disk store only — not for production use)
+// Seed your catalog (disk store only - not for production use)
 await store.catalogStore.seed({
   '@context': ['https://w3id.org/dspace/2025/1/context.jsonld'],
   '@type': 'Catalog',
@@ -483,7 +483,7 @@ class MyNegotiationStore implements NegotiationStore {
 }
 
 class MyTransferStore implements TransferStore {
-  // Same shape as NegotiationStore — create / findByProviderPid / findByConsumerPid / update
+  // Same shape as NegotiationStore - create / findByProviderPid / findByConsumerPid / update
 }
 
 // Compose into a DspStore and hand it to the factory
@@ -556,7 +556,7 @@ By default, the `/catalog/request` endpoint returns the full catalog. If a Consu
 const provider = createDspProvider({
   store,
   catalogFilter: async (filter, catalogStore) => {
-    // filter is the raw value the Consumer sent — validate and apply it
+    // filter is the raw value the Consumer sent - validate and apply it
     const query = filter as { keyword?: string };
     const full = await catalogStore.getCatalog();
     return {
@@ -612,7 +612,7 @@ const provider = createDspProvider({
 Called after the Consumer accepts an offer (negotiation is in `ACCEPTED` state). Transitions to `AGREED` and notifies the Consumer.
 
 ```typescript
-// Called from your business logic — e.g. inside a webhook or background worker
+// Called from your business logic - e.g. inside a webhook or background worker
 const negotiation = await provider.negotiation.sendAgreement(providerPid, {
   '@id':      `urn:agreement:${crypto.randomUUID()}`,
   '@type':    'Agreement',
@@ -668,7 +668,7 @@ Called after the Consumer requests a transfer (transfer is in `REQUESTED` state)
 
 ```typescript
 const transfer = await provider.transfer.providerStartTransfer(providerPid, {
-  // dataAddress is required for HTTP_PULL — omit for HTTP_PUSH
+  // dataAddress is required for HTTP_PULL - omit for HTTP_PUSH
   endpointType: 'https://w3id.org/idsa/v4.1/HTTP',
   endpoint:     'https://my-provider.example.com/data/files/42',
   endpointProperties: [
@@ -705,12 +705,12 @@ await provider.transfer.providerTerminateTransfer(providerPid, {
 
 ## Reacting to inbound messages (hooks)
 
-Both the Consumer and the Provider can register optional callbacks — **hooks** — that fire after each inbound DSP message has been validated, its state transition applied, and the HTTP response sent. Hooks are your bridge between the protocol and your business logic.
+Both the Consumer and the Provider can register optional callbacks - **hooks** - that fire after each inbound DSP message has been validated, its state transition applied, and the HTTP response sent. Hooks are your bridge between the protocol and your business logic.
 
 **Key properties of hooks:**
-- All hooks are optional — omit any you don't need.
+- All hooks are optional - omit any you don't need.
 - Hooks are **fire-and-forget**: the HTTP 200 response to the counterparty is sent first, then the hook runs asynchronously. Long-running work inside a hook will not delay the protocol.
-- If a hook throws, the error is caught and logged — it does not affect the protocol or the HTTP response.
+- If a hook throws, the error is caught and logged - it does not affect the protocol or the HTTP response.
 - The `negotiation` or `transfer` entity passed to the hook already reflects the **new state** after the transition.
 
 ### Consumer-side hooks
@@ -924,7 +924,7 @@ try {
 
 ## Architecture note: the two styles of outbound HTTP
 
-A common question when reading this library: *both the Consumer and the Provider make outbound HTTP calls — but only the Consumer has a `client/` module. Why?*
+A common question when reading this library: *both the Consumer and the Provider make outbound HTTP calls - but only the Consumer has a `client/` module. Why?*
 
 The distinction is about **protocol role and context**:
 
@@ -932,7 +932,7 @@ The distinction is about **protocol role and context**:
 
 The Consumer always *initiates* protocol sequences. When it calls `consumer.negotiation.requestNegotiation()`, it is starting a brand-new conversation: it constructs a full DSP message from scratch, targets an arbitrary Provider URL, and does not yet have any state stored locally. This warrants a dedicated typed client module; the calls are self-contained and independent of any prior stored record.
 
-**Provider `provider.negotiation.*` and `provider.transfer.*` — warm calls, context already stored**
+**Provider `provider.negotiation.*` and `provider.transfer.*` - warm calls, context already stored**
 
 The Provider's outbound calls are *continuations* of a protocol sequence already in progress. When `provider.negotiation.sendAgreement(providerPid, agreement)` is called, the `providerPid` is looked up in the store, the Consumer's `callbackAddress` is read from that record, the state is mutated, and *then* the HTTP call is made. The logic is co-located with the handler because it directly shares the store and the state machine; it is a side-effect of a state transition, not a standalone request.
 
@@ -941,7 +941,7 @@ The Provider's outbound calls are *continuations* of a protocol sequence already
 | | Consumer client | Provider helpers |
 |---|---|---|
 | Who initiates | Always the Consumer | Always the Provider |
-| Prior state available | No — constructing from scratch | Yes - reads from store |
+| Prior state available | No - constructing from scratch | Yes - reads from store |
 | Target URL source | Caller supplies `providerBaseUrl` | Read from stored `callbackAddress` |
 | Lives in | `src/consumer/client/` | `src/provider/handlers/` |
 | Errors thrown | `DspClientError` (typed) | Generic `Error` |
