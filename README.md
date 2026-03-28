@@ -2,7 +2,7 @@
 
 Express.js implementation of the [Eclipse Dataspace Protocol (DSP) 2025-1](https://eclipse-dataspace-protocol-base.github.io/DataspaceProtocol/2025-1/).
 
-This library handles the full HTTP layer for both the **Provider** and **Consumer** roles — catalog serving, contract negotiation, and transfer process — so your application only implements business decisions.
+This library handles the full HTTP layer for both the **Provider** and **Consumer** roles; catalog serving, contract negotiation, and transfer process. Your application only implements business decisions.
 
 [![npm version](https://img.shields.io/npm/v/express-dataspace-protocol.svg)](https://www.npmjs.com/package/express-dataspace-protocol)
 [![License](https://img.shields.io/badge/MIT-blue.svg)](LICENSE.md)
@@ -34,20 +34,20 @@ The **Eclipse Dataspace Protocol** is an open standard developed by initially by
 
 Plus a **Catalog Protocol** for advertising available DCAT datasets with ODRL-based access policies.
 
-This library implements DSP 2025-1 over HTTP. All state transitions, message shapes, and endpoint paths follow the specification exactly — your code only handles the business logic around those transitions.
+This library implements DSP 2025-1 over HTTP. All state transitions, message shapes, and endpoint paths follow the specification exactly; your code only handles the business logic around those transitions.
 
 ## Features
 
-- **Full DSP 2025-1 coverage** — Catalog, CNP, and TPP for both Provider and Consumer roles
-- **Provider HTTP server** — Express router with all required DSP endpoints, including `/.well-known/dspace-version`
-- **Consumer outbound client** — Typed helpers for every Protocol request a Consumer makes to a Provider
-- **Consumer callback router** — Express router that receives and processes inbound Provider messages
-- **Dual-role support** — Run Provider and Consumer in the same process
-- **Hook system** — React to inbound messages with your own async business logic
-- **Pluggable auth** — Bring any Express `RequestHandler` (JWT, API key, OAuth2, mTLS…)
-- **Pluggable persistence** — Implement store interfaces backed by any database; built-in disk store for development
-- **Provider-initiated events** — Typed helpers to send agreements, counter-offers, start/complete/suspend/terminate transfers
-- **TypeScript-first** — Full type declarations shipped, no separate `@types` package needed
+- **Full DSP 2025-1 coverage**: Catalog, CNP, and TPP for both Provider and Consumer roles
+- **Provider HTTP server**: Express router with all required DSP endpoints, including `/.well-known/dspace-version`
+- **Consumer outbound client**: Typed helpers for every Protocol request a Consumer makes to a Provider
+- **Consumer callback router**: Express router that receives and processes inbound Provider messages
+- **Dual-role support**: Run Provider and Consumer in the same process
+- **Hook system**: React to inbound messages with your own async business logic
+- **Pluggable auth**: Bring any Express `RequestHandler` (JWT, API key, OAuth2, mTLS…)
+- **Pluggable persistence**: Implement store interfaces backed by any database; built-in disk store for development
+- **Provider-initiated events**: Typed helpers to send agreements, counter-offers, start/complete/suspend/terminate transfers
+- **TypeScript-first**: Full type declarations shipped, no separate `@types` package needed
 
 ## Requirements
 
@@ -60,7 +60,7 @@ This library implements DSP 2025-1 over HTTP. All state transitions, message sha
 npm install express-dataspace-protocol
 ```
 
-Express is a peer dependency — install it alongside if you have not already:
+Express is a peer dependency. Install it alongside if you have not already:
 
 ```bash
 npm install express
@@ -206,7 +206,7 @@ const transfer = await consumer.transfer.requestTransfer(PROVIDER, {
 
 ## Hook System
 
-Hooks let you run async business logic when the library processes an inbound message, without having to intercept HTTP directly. They are fire-and-forget — a hook error is logged but never disrupts the protocol response.
+Hooks let you run async business logic when the library processes an inbound message, without having to intercept HTTP directly. They are fire-and-forget, a hook error is logged but never disrupts the protocol response.
 
 Four interfaces cover every inbound message for both sides:
 
@@ -347,7 +347,7 @@ Return `undefined` to send requests without an `Authorization` header.
 ## Persistence
 
 The DSP itself does not specify where and how contracts and agreements are persisted. This is usually up to the provider or consumer's implementation to decide.
-The library defines three store interfaces — `CatalogStore`, `NegotiationStore`, `TransferStore` — which lets you decide and implement against any database.
+The library defines three store interfaces, `CatalogStore`, `NegotiationStore`, `TransferStore` which lets you decide and implement against any database.
 
 ### Built-in disk store (development / testing)
 
