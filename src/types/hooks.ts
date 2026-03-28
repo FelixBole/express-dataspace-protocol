@@ -6,8 +6,8 @@
 // NOT affect the protocol response.
 // ---------------------------------------------------------------------------
 
-import { ContractNegotiation } from './negotiation';
-import { TransferProcess } from './transfer';
+import { ContractNegotiation } from "./negotiation";
+import { TransferProcess } from "./transfer";
 
 // ---------------------------------------------------------------------------
 // Type aliases
@@ -15,13 +15,11 @@ import { TransferProcess } from './transfer';
 
 /** A hook that receives the updated negotiation entity. */
 export type NegotiationHook = (
-  negotiation: ContractNegotiation
+	negotiation: ContractNegotiation,
 ) => void | Promise<void>;
 
 /** A hook that receives the updated transfer process entity. */
-export type TransferHook = (
-  transfer: TransferProcess
-) => void | Promise<void>;
+export type TransferHook = (transfer: TransferProcess) => void | Promise<void>;
 
 // ---------------------------------------------------------------------------
 // Provider-side hooks
@@ -38,37 +36,37 @@ export type TransferHook = (
  *   `provider.negotiation.finalizeNegotiation()` here.
  */
 export interface ProviderNegotiationHooks {
-  /**
-   * Consumer sent `ContractRequestMessage` — a brand-new or counter-request
-   * negotiation. State is now `REQUESTED`. The `negotiation.offer` field
-   * contains the Consumer's requested terms.
-   *
-   * Typical response: call `provider.negotiation.sendCounterOffer()` or
-   * `provider.negotiation.sendAgreement()`, or let a human review first.
-   */
-  onNegotiationRequested?: NegotiationHook;
+	/**
+	 * Consumer sent `ContractRequestMessage` — a brand-new or counter-request
+	 * negotiation. State is now `REQUESTED`. The `negotiation.offer` field
+	 * contains the Consumer's requested terms.
+	 *
+	 * Typical response: call `provider.negotiation.sendCounterOffer()` or
+	 * `provider.negotiation.sendAgreement()`, or let a human review first.
+	 */
+	onNegotiationRequested?: NegotiationHook;
 
-  /**
-   * Consumer sent `ContractNegotiationEventMessage` with `eventType=ACCEPTED`.
-   * State is now `ACCEPTED` — the Consumer has accepted your offer.
-   *
-   * **Most common action:** call `provider.negotiation.sendAgreement()`.
-   */
-  onNegotiationAccepted?: NegotiationHook;
+	/**
+	 * Consumer sent `ContractNegotiationEventMessage` with `eventType=ACCEPTED`.
+	 * State is now `ACCEPTED` — the Consumer has accepted your offer.
+	 *
+	 * **Most common action:** call `provider.negotiation.sendAgreement()`.
+	 */
+	onNegotiationAccepted?: NegotiationHook;
 
-  /**
-   * Consumer sent `ContractAgreementVerificationMessage`. State is now
-   * `VERIFIED` — the Consumer has verified your agreement.
-   *
-   * **Most common action:** call `provider.negotiation.finalizeNegotiation()`.
-   */
-  onAgreementVerified?: NegotiationHook;
+	/**
+	 * Consumer sent `ContractAgreementVerificationMessage`. State is now
+	 * `VERIFIED` — the Consumer has verified your agreement.
+	 *
+	 * **Most common action:** call `provider.negotiation.finalizeNegotiation()`.
+	 */
+	onAgreementVerified?: NegotiationHook;
 
-  /**
-   * Consumer sent `ContractNegotiationTerminationMessage`. State is now
-   * `TERMINATED`. Notification only — no protocol response is expected.
-   */
-  onNegotiationTerminated?: NegotiationHook;
+	/**
+	 * Consumer sent `ContractNegotiationTerminationMessage`. State is now
+	 * `TERMINATED`. Notification only — no protocol response is expected.
+	 */
+	onNegotiationTerminated?: NegotiationHook;
 }
 
 /**
@@ -79,33 +77,33 @@ export interface ProviderNegotiationHooks {
  *   `provider.transfer.providerStartTransfer()` here.
  */
 export interface ProviderTransferHooks {
-  /**
-   * Consumer sent `TransferRequestMessage`. State is now `REQUESTED`.
-   *
-   * **Most common action:** call `provider.transfer.providerStartTransfer()`.
-   */
-  onTransferRequested?: TransferHook;
+	/**
+	 * Consumer sent `TransferRequestMessage`. State is now `REQUESTED`.
+	 *
+	 * **Most common action:** call `provider.transfer.providerStartTransfer()`.
+	 */
+	onTransferRequested?: TransferHook;
 
-  /**
-   * Consumer sent `TransferStartMessage` to resume a suspended transfer.
-   * State is now `STARTED`. Resume your data streaming pipeline.
-   */
-  onTransferRestartedByConsumer?: TransferHook;
+	/**
+	 * Consumer sent `TransferStartMessage` to resume a suspended transfer.
+	 * State is now `STARTED`. Resume your data streaming pipeline.
+	 */
+	onTransferRestartedByConsumer?: TransferHook;
 
-  /**
-   * Consumer sent `TransferCompletionMessage`. State is now `COMPLETED`.
-   */
-  onTransferCompletedByConsumer?: TransferHook;
+	/**
+	 * Consumer sent `TransferCompletionMessage`. State is now `COMPLETED`.
+	 */
+	onTransferCompletedByConsumer?: TransferHook;
 
-  /**
-   * Consumer sent `TransferSuspensionMessage`. State is now `SUSPENDED`.
-   */
-  onTransferSuspendedByConsumer?: TransferHook;
+	/**
+	 * Consumer sent `TransferSuspensionMessage`. State is now `SUSPENDED`.
+	 */
+	onTransferSuspendedByConsumer?: TransferHook;
 
-  /**
-   * Consumer sent `TransferTerminationMessage`. State is now `TERMINATED`.
-   */
-  onTransferTerminatedByConsumer?: TransferHook;
+	/**
+	 * Consumer sent `TransferTerminationMessage`. State is now `TERMINATED`.
+	 */
+	onTransferTerminatedByConsumer?: TransferHook;
 }
 
 // ---------------------------------------------------------------------------
@@ -123,36 +121,36 @@ export interface ProviderTransferHooks {
  *   `consumer.negotiation.verifyAgreement()`.
  */
 export interface ConsumerNegotiationHooks {
-  /**
-   * Provider sent `ContractOfferMessage` (either a new Provider-initiated
-   * negotiation or a counter-offer on an existing one). State is now
-   * `OFFERED`. The `negotiation.offer` field contains the Provider's terms.
-   *
-   * Typical response: call `consumer.negotiation.acceptOffer()` or
-   * `consumer.negotiation.requestNegotiation()` with counter-terms.
-   */
-  onOfferReceived?: NegotiationHook;
+	/**
+	 * Provider sent `ContractOfferMessage` (either a new Provider-initiated
+	 * negotiation or a counter-offer on an existing one). State is now
+	 * `OFFERED`. The `negotiation.offer` field contains the Provider's terms.
+	 *
+	 * Typical response: call `consumer.negotiation.acceptOffer()` or
+	 * `consumer.negotiation.requestNegotiation()` with counter-terms.
+	 */
+	onOfferReceived?: NegotiationHook;
 
-  /**
-   * Provider sent `ContractAgreementMessage`. State is now `AGREED`.
-   *
-   * **Most common action:** call `consumer.negotiation.verifyAgreement()`.
-   * Inspect `negotiation.agreement` for the full agreement terms first.
-   */
-  onAgreementReceived?: NegotiationHook;
+	/**
+	 * Provider sent `ContractAgreementMessage`. State is now `AGREED`.
+	 *
+	 * **Most common action:** call `consumer.negotiation.verifyAgreement()`.
+	 * Inspect `negotiation.agreement` for the full agreement terms first.
+	 */
+	onAgreementReceived?: NegotiationHook;
 
-  /**
-   * Provider sent `ContractNegotiationEventMessage` with `eventType=FINALIZED`.
-   * State is now `FINALIZED`. The negotiation is complete — the agreement
-   * in `negotiation.agreement` is now live. Persist or act on it.
-   */
-  onNegotiationFinalized?: NegotiationHook;
+	/**
+	 * Provider sent `ContractNegotiationEventMessage` with `eventType=FINALIZED`.
+	 * State is now `FINALIZED`. The negotiation is complete — the agreement
+	 * in `negotiation.agreement` is now live. Persist or act on it.
+	 */
+	onNegotiationFinalized?: NegotiationHook;
 
-  /**
-   * Provider sent `ContractNegotiationTerminationMessage`. State is now
-   * `TERMINATED`. Notification only.
-   */
-  onNegotiationTerminated?: NegotiationHook;
+	/**
+	 * Provider sent `ContractNegotiationTerminationMessage`. State is now
+	 * `TERMINATED`. Notification only.
+	 */
+	onNegotiationTerminated?: NegotiationHook;
 }
 
 /**
@@ -163,30 +161,30 @@ export interface ConsumerNegotiationHooks {
  *   data. For PULL transfers, `transfer.dataAddress` contains the endpoint.
  */
 export interface ConsumerTransferHooks {
-  /**
-   * Provider sent `TransferStartMessage`. State is now `STARTED`.
-   * For PULL transfers, `transfer.dataAddress` contains the endpoint and
-   * credentials to fetch the data from.
-   *
-   * **Most common action:** start pulling/receiving data.
-   */
-  onTransferStarted?: TransferHook;
+	/**
+	 * Provider sent `TransferStartMessage`. State is now `STARTED`.
+	 * For PULL transfers, `transfer.dataAddress` contains the endpoint and
+	 * credentials to fetch the data from.
+	 *
+	 * **Most common action:** start pulling/receiving data.
+	 */
+	onTransferStarted?: TransferHook;
 
-  /**
-   * Provider sent `TransferCompletionMessage`. State is now `COMPLETED`.
-   */
-  onTransferCompleted?: TransferHook;
+	/**
+	 * Provider sent `TransferCompletionMessage`. State is now `COMPLETED`.
+	 */
+	onTransferCompleted?: TransferHook;
 
-  /**
-   * Provider sent `TransferSuspensionMessage`. State is now `SUSPENDED`.
-   * Pause your data pipeline. The Provider may restart via
-   * `providerStartTransfer`, or you can restart via
-   * `consumer.transfer.startTransfer()`.
-   */
-  onTransferSuspended?: TransferHook;
+	/**
+	 * Provider sent `TransferSuspensionMessage`. State is now `SUSPENDED`.
+	 * Pause your data pipeline. The Provider may restart via
+	 * `providerStartTransfer`, or you can restart via
+	 * `consumer.transfer.startTransfer()`.
+	 */
+	onTransferSuspended?: TransferHook;
 
-  /**
-   * Provider sent `TransferTerminationMessage`. State is now `TERMINATED`.
-   */
-  onTransferTerminated?: TransferHook;
+	/**
+	 * Provider sent `TransferTerminationMessage`. State is now `TERMINATED`.
+	 */
+	onTransferTerminated?: TransferHook;
 }
