@@ -6,7 +6,6 @@ This library handles the full HTTP layer for both the **Provider** and **Consume
 
 [![npm version](https://img.shields.io/npm/v/express-dataspace-protocol.svg)](https://www.npmjs.com/package/express-dataspace-protocol)
 [![License](https://img.shields.io/badge/MIT-blue.svg)](LICENSE.md)
-[![Node >=18](https://img.shields.io/node/v/express-dataspace-protocol.svg)](package.json)
 
 ## Table of Contents
 
