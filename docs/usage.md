@@ -800,7 +800,7 @@ const consumer = createDspConsumer({
 
 ### Provider-side hooks
 
-Fired when the Provider receives a message **from the Consumer**. The two most action-critical are `onNegotiationRequested` (decide whether to agree) and `onTransferRequested` (start the data transfer).
+Fired when the Provider receives a message **from the Consumer**. The two most action-critical are `onNegotiationRequested` / `onNegotiationReRequested` (decide whether to agree) and `onTransferRequested` (start the data transfer).
 
 ```typescript
 const provider = createDspProvider({
@@ -810,11 +810,35 @@ const provider = createDspProvider({
   hooks: {
     negotiation: {
       /**
-       * Consumer sent a new negotiation request (or counter-request).
+       * Consumer sent a brand-new ContractRequestMessage (no providerPid).
        * State is now REQUESTED. negotiation.offer has their proposed terms.
        * Typical response: agree immediately, counter, or terminate.
        */
       onNegotiationRequested: async (negotiation) => {
+        if (policyEngine.approve(negotiation.offer)) {
+          await provider.negotiation.sendAgreement(negotiation.providerPid, {
+            '@id':      `urn:agreement:${crypto.randomUUID()}`,
+            '@type':    'Agreement',
+            target:     negotiation.offer.target,
+            assigner:   'urn:provider:my-org',
+            assignee:   'urn:consumer:their-org',
+            permission: negotiation.offer.permission ?? [],
+          });
+        } else {
+          await provider.negotiation.terminateNegotiationAsProvider(
+            negotiation.providerPid,
+            { code: 'POLICY_REJECTED' },
+          );
+        }
+      },
+
+      /**
+       * Consumer re-requested on an existing negotiation (providerPid was set
+       * in ContractRequestMessage), typically after receiving a counter-offer.
+       * State advances back to REQUESTED. negotiation.offer has their updated
+       * terms. Same response options as onNegotiationRequested.
+       */
+      onNegotiationReRequested: async (negotiation) => {
         if (policyEngine.approve(negotiation.offer)) {
           await provider.negotiation.sendAgreement(negotiation.providerPid, {
             '@id':      `urn:agreement:${crypto.randomUUID()}`,

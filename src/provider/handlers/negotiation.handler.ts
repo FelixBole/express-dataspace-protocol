@@ -122,7 +122,11 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
 	}
 
 	/**
-	 * POST /negotiations/request — §8.2.2 — Consumer initiates negotiation
+	 * POST /negotiations/request — §8.2.2
+	 *
+	 * - No `providerPid` in body → Consumer initiates a new negotiation (201).
+	 * - `providerPid` present → Consumer re-requests on an existing negotiation,
+	 *   e.g. after receiving a Provider counter-offer (200).
 	 */
 	async function requestNegotiation(
 		req: Request,
@@ -132,6 +136,42 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
 		try {
 			const body = req.body as ContractRequestMessage;
 
+			// ── Re-request on an existing negotiation ──────────────────────
+			if (body.providerPid) {
+				const existing = await deps.store.findByProviderPid(
+					body.providerPid,
+				);
+				if (!existing) {
+					notFound(res, body.providerPid);
+					return;
+				}
+
+				let nextState: NegotiationState;
+				try {
+					nextState = nextNegotiationState(
+						existing.state,
+						"ContractRequestMessage",
+						"CONSUMER",
+					);
+				} catch (err) {
+					if (err instanceof InvalidNegotiationTransitionError) {
+						badTransition(res, err);
+						return;
+					}
+					throw err;
+				}
+
+				const updated = await deps.store.update(existing.providerPid, {
+					state: nextState,
+					offer: body.offer,
+					callbackAddress: body.callbackAddress,
+				});
+				res.status(200).json(negotiationResponse(updated));
+				fireHook(deps.hooks?.onNegotiationReRequested, updated);
+				return;
+			}
+
+			// ── New negotiation ─────────────────────────────────────────────
 			let nextState: NegotiationState;
 			try {
 				nextState = nextNegotiationState(

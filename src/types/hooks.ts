@@ -37,14 +37,25 @@ export type TransferHook = (transfer: TransferProcess) => void | Promise<void>;
  */
 export interface ProviderNegotiationHooks {
 	/**
-	 * Consumer sent `ContractRequestMessage` — a brand-new or counter-request
-	 * negotiation. State is now `REQUESTED`. The `negotiation.offer` field
-	 * contains the Consumer's requested terms.
+	 * Consumer sent `ContractRequestMessage` **without** a `providerPid` — a
+	 * brand-new negotiation. State is now `REQUESTED`. The
+	 * `negotiation.offer` field contains the Consumer's requested terms.
 	 *
 	 * Typical response: call `provider.negotiation.sendCounterOffer()` or
 	 * `provider.negotiation.sendAgreement()`, or let a human review first.
 	 */
 	onNegotiationRequested?: NegotiationHook;
+
+	/**
+	 * Consumer sent `ContractRequestMessage` **with** a `providerPid` —
+	 * re-requesting on an existing negotiation (e.g. after receiving a
+	 * Provider counter-offer). State advances back to `REQUESTED`.
+	 * The `negotiation.offer` field contains the Consumer's updated terms.
+	 *
+	 * Typical response: same as `onNegotiationRequested` — inspect the new
+	 * offer and call `sendCounterOffer()` or `sendAgreement()`.
+	 */
+	onNegotiationReRequested?: NegotiationHook;
 
 	/**
 	 * Consumer sent `ContractNegotiationEventMessage` with `eventType=ACCEPTED`.

@@ -35,7 +35,7 @@ export function makeCatalogHandlers(deps: CatalogHandlerDeps) {
 		try {
 			const body = req.body as Partial<CatalogRequestMessage>;
 
-            // Decision made here to be permissive and not require the required fields verification for @context and @type.
+			// Decision made here to be permissive and not require the required fields verification for @context and @type.
 
 			if (body.filter !== undefined) {
 				if (!deps.catalogFilter) {

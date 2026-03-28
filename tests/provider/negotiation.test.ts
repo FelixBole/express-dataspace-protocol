@@ -63,6 +63,81 @@ describe("Provider — Negotiation endpoints (§8.2)", () => {
 			expect(res.body.state).toBe(NegotiationState.REQUESTED);
 			expect(res.body.providerPid).toBeDefined();
 		});
+
+		it("re-requests on an existing OFFERED negotiation and returns 200", async () => {
+			const { app, negStore } = makeApp();
+			seedNegotiation(negStore, { state: NegotiationState.OFFERED });
+
+			const res = await request(app)
+				.post("/dsp/negotiations/request")
+				.send({
+					"@context": [
+						"https://w3id.org/dspace/2025/1/context.jsonld",
+					],
+					"@type": "ContractRequestMessage",
+					providerPid: "urn:uuid:provider-001",
+					consumerPid: "urn:uuid:consumer-001",
+					callbackAddress: "https://consumer.example/callback",
+					offer: {
+						"@id": "urn:offer:2",
+						target: "urn:dataset:1",
+						permission: [],
+					},
+				});
+
+			expect(res.status).toBe(200);
+			expect(res.body["@type"]).toBe("ContractNegotiation");
+			expect(res.body.state).toBe(NegotiationState.REQUESTED);
+			expect(res.body.providerPid).toBe("urn:uuid:provider-001");
+		});
+
+		it("returns 404 when re-requesting with unknown providerPid", async () => {
+			const { app } = makeApp();
+
+			const res = await request(app)
+				.post("/dsp/negotiations/request")
+				.send({
+					"@context": [
+						"https://w3id.org/dspace/2025/1/context.jsonld",
+					],
+					"@type": "ContractRequestMessage",
+					providerPid: "urn:uuid:nonexistent",
+					consumerPid: "urn:uuid:consumer-001",
+					callbackAddress: "https://consumer.example/callback",
+					offer: {
+						"@id": "urn:offer:1",
+						target: "urn:dataset:1",
+					},
+				});
+
+			expect(res.status).toBe(404);
+			expect(res.body.code).toBe("NotFound");
+		});
+
+		it("returns 400 when re-requesting from an invalid state", async () => {
+			const { app, negStore } = makeApp();
+			// REQUESTED → REQUESTED is not a valid transition (only OFFERED → REQUESTED is)
+			seedNegotiation(negStore, { state: NegotiationState.REQUESTED });
+
+			const res = await request(app)
+				.post("/dsp/negotiations/request")
+				.send({
+					"@context": [
+						"https://w3id.org/dspace/2025/1/context.jsonld",
+					],
+					"@type": "ContractRequestMessage",
+					providerPid: "urn:uuid:provider-001",
+					consumerPid: "urn:uuid:consumer-001",
+					callbackAddress: "https://consumer.example/callback",
+					offer: {
+						"@id": "urn:offer:1",
+						target: "urn:dataset:1",
+					},
+				});
+
+			expect(res.status).toBe(400);
+			expect(res.body.code).toBe("InvalidStateTransition");
+		});
 	});
 
 	describe("GET /dsp/negotiations/:providerPid — get negotiation", () => {
