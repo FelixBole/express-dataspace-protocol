@@ -46,6 +46,22 @@ export interface DspProviderOptions {
     catalog: Catalog,
     req: Request
   ) => { data: Catalog; next?: string; prev?: string };
+
+  /**
+   * Called before every outbound HTTP request to a Consumer's callbackAddress.
+   * Return a Bearer token string (e.g. `'Bearer <token>'`) or undefined to
+   * omit the Authorization header.
+   * Required if provider-initiated helpers need to authenticate callbacks.
+   */
+  getOutboundToken?: (consumerCallbackUrl: string) => Promise<string | undefined>;
+
+  /**
+   * The public base URL of this Provider's DSP API.
+   * Used as the `callbackAddress` field in outbound CNP messages (e.g.
+   * ContractOfferMessage) so the Consumer knows where to call back.
+   * Example: 'https://my-provider.example.com/dsp'
+   */
+  providerAddress?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -111,9 +127,16 @@ export function createDspProvider(options: DspProviderOptions): DspProvider {
   };
   const wellKnownRouter = makeVersionRouter({ versionEntry });
 
-  // Provider-initiated helpers
-  const negotiation = makeNegotiationHandlers({ store: options.store.negotiation });
-  const transfer = makeTransferHandlers({ store: options.store.transfer });
+  // Provider-initiated helpers (include outbound token + provider address)
+  const negotiation = makeNegotiationHandlers({
+    store: options.store.negotiation,
+    getOutboundToken: options.getOutboundToken,
+    providerAddress: options.providerAddress,
+  });
+  const transfer = makeTransferHandlers({
+    store: options.store.transfer,
+    getOutboundToken: options.getOutboundToken,
+  });
 
   return { router, wellKnownRouter, negotiation, transfer };
 }

@@ -6,17 +6,49 @@ import {
   TransferRequestMessage,
   TransferStartMessage,
   TransferSuspensionMessage,
+  TransferCompletionMessage,
   TransferTerminationMessage,
 } from '../../types/transfer';
-import { DSP_CONTEXT } from '../../types/common';
+import { DSP_CONTEXT, DataAddress } from '../../types/common';
 import {
   nextTransferState,
   InvalidTransferTransitionError,
 } from '../../state-machines/transfer.state-machine';
-import { generateId } from '../../utils';
+import { generateId, buildUrl } from '../../utils';
 
 export interface TransferHandlerDeps {
   store: TransferStore;
+  /**
+   * Called before every outbound HTTP request to a Consumer's callbackAddress.
+   * Return a full Authorization header value (e.g. 'Bearer <token>') or
+   * undefined to send no Authorization header.
+   */
+  getOutboundToken?: (consumerCallbackUrl: string) => Promise<string | undefined>;
+}
+
+// ---------------------------------------------------------------------------
+// Internal outbound HTTP helper
+// ---------------------------------------------------------------------------
+
+async function providerPost(
+  url: string,
+  body: unknown,
+  getToken?: (url: string) => Promise<string | undefined>
+): Promise<void> {
+  const token = getToken ? await getToken(url) : undefined;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = token;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Provider callback failed: ${res.status} ${url}\n${text}`);
+  }
 }
 
 function transferResponse(t: TransferProcess) {
@@ -183,24 +215,138 @@ export function makeTransferHandlers(deps: TransferHandlerDeps) {
   }
 
   // -------------------------------------------------------------------------
-  // Provider-initiated helpers called by provider business logic
+  // Provider-initiated helpers — update local state AND notify the Consumer
+  // via their callbackAddress. All methods are safe to await in business logic.
   // -------------------------------------------------------------------------
 
   /**
-   * Transition REQUESTED → STARTED (Provider starts the transfer).
+   * Transitions REQUESTED → STARTED (Provider starts the transfer) and POSTs
+   * TransferStartMessage to the Consumer's callbackAddress (§10.3.2).
+   *
+   * Pass `dataAddress` for pull transfers where the Provider supplies the
+   * endpoint credentials at start time.
    */
   async function providerStartTransfer(
     providerPid: string,
-    dataAddress?: import('../../types/common').DataAddress
+    dataAddress?: DataAddress
   ): Promise<TransferProcess> {
     const transfer = await deps.store.findByProviderPid(providerPid);
     if (!transfer) throw new Error(`Transfer process not found: ${providerPid}`);
+    if (!transfer.callbackAddress) throw new Error(`Transfer '${providerPid}' has no callbackAddress.`);
 
     const nextState = nextTransferState(transfer.state, 'TransferStartMessage', 'PROVIDER');
-    return deps.store.update(providerPid, {
+    const updated = await deps.store.update(providerPid, {
       state: nextState,
       ...(dataAddress ? { dataAddress } : {}),
     });
+
+    const msg: TransferStartMessage = {
+      '@context': [DSP_CONTEXT],
+      '@type': 'TransferStartMessage',
+      providerPid: updated.providerPid,
+      consumerPid: updated.consumerPid,
+      ...(updated.dataAddress ? { dataAddress: updated.dataAddress } : {}),
+    };
+
+    await providerPost(
+      buildUrl(transfer.callbackAddress, `/transfers/${encodeURIComponent(updated.consumerPid)}/start`),
+      msg,
+      deps.getOutboundToken
+    );
+
+    return updated;
+  }
+
+  /**
+   * Transitions STARTED → COMPLETED (Provider signals completion) and POSTs
+   * TransferCompletionMessage to the Consumer's callbackAddress (§10.3.3).
+   */
+  async function providerCompleteTransfer(providerPid: string): Promise<TransferProcess> {
+    const transfer = await deps.store.findByProviderPid(providerPid);
+    if (!transfer) throw new Error(`Transfer process not found: ${providerPid}`);
+    if (!transfer.callbackAddress) throw new Error(`Transfer '${providerPid}' has no callbackAddress.`);
+
+    const nextState = nextTransferState(transfer.state, 'TransferCompletionMessage', 'PROVIDER');
+    const updated = await deps.store.update(providerPid, { state: nextState });
+
+    const msg: TransferCompletionMessage = {
+      '@context': [DSP_CONTEXT],
+      '@type': 'TransferCompletionMessage',
+      providerPid: updated.providerPid,
+      consumerPid: updated.consumerPid,
+    };
+
+    await providerPost(
+      buildUrl(transfer.callbackAddress, `/transfers/${encodeURIComponent(updated.consumerPid)}/completion`),
+      msg,
+      deps.getOutboundToken
+    );
+
+    return updated;
+  }
+
+  /**
+   * Transitions STARTED → SUSPENDED and POSTs TransferSuspensionMessage to
+   * the Consumer's callbackAddress (§10.3.5).
+   */
+  async function providerSuspendTransfer(
+    providerPid: string,
+    opts?: { code?: string; reason?: string[] }
+  ): Promise<TransferProcess> {
+    const transfer = await deps.store.findByProviderPid(providerPid);
+    if (!transfer) throw new Error(`Transfer process not found: ${providerPid}`);
+    if (!transfer.callbackAddress) throw new Error(`Transfer '${providerPid}' has no callbackAddress.`);
+
+    const nextState = nextTransferState(transfer.state, 'TransferSuspensionMessage', 'PROVIDER');
+    const updated = await deps.store.update(providerPid, { state: nextState });
+
+    const msg: TransferSuspensionMessage = {
+      '@context': [DSP_CONTEXT],
+      '@type': 'TransferSuspensionMessage',
+      providerPid: updated.providerPid,
+      consumerPid: updated.consumerPid,
+      ...opts,
+    };
+
+    await providerPost(
+      buildUrl(transfer.callbackAddress, `/transfers/${encodeURIComponent(updated.consumerPid)}/suspension`),
+      msg,
+      deps.getOutboundToken
+    );
+
+    return updated;
+  }
+
+  /**
+   * Terminates the transfer from the provider side and POSTs
+   * TransferTerminationMessage to the Consumer's callbackAddress (§10.3.4).
+   */
+  async function providerTerminateTransfer(
+    providerPid: string,
+    opts?: { code?: string; reason?: string[] }
+  ): Promise<TransferProcess> {
+    const transfer = await deps.store.findByProviderPid(providerPid);
+    if (!transfer) throw new Error(`Transfer process not found: ${providerPid}`);
+    if (!transfer.callbackAddress) throw new Error(`Transfer '${providerPid}' has no callbackAddress.`);
+
+    const nextState = nextTransferState(transfer.state, 'TransferTerminationMessage', 'PROVIDER');
+    const updated = await deps.store.update(providerPid, { state: nextState });
+
+    const msg: TransferTerminationMessage = {
+      '@context': [DSP_CONTEXT],
+      '@type': 'TransferTerminationMessage',
+      providerPid: updated.providerPid,
+      consumerPid: updated.consumerPid,
+      ...opts,
+    };
+
+    await providerPost(
+      buildUrl(transfer.callbackAddress, `/transfers/${encodeURIComponent(updated.consumerPid)}/termination`),
+      msg,
+      deps.getOutboundToken
+    );
+
+    return updated;
   }
 
   return {
@@ -211,5 +357,8 @@ export function makeTransferHandlers(deps: TransferHandlerDeps) {
     suspendTransfer,
     terminateTransfer,
     providerStartTransfer,
+    providerCompleteTransfer,
+    providerSuspendTransfer,
+    providerTerminateTransfer,
   };
 }

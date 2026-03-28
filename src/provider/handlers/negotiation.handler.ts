@@ -4,8 +4,12 @@ import {
   ContractNegotiation,
   NegotiationState,
   ContractRequestMessage,
+  ContractOfferMessage,
+  ContractAgreementMessage,
   ContractNegotiationEventMessage,
   ContractNegotiationTerminationMessage,
+  Agreement,
+  MessageOffer,
 } from '../../types/negotiation';
 import { DSP_CONTEXT } from '../../types/common';
 import {
@@ -13,10 +17,47 @@ import {
   InvalidNegotiationTransitionError,
   NegotiationMessageType,
 } from '../../state-machines/negotiation.state-machine';
-import { generateId, nowIso } from '../../utils';
+import { generateId, nowIso, buildUrl } from '../../utils';
 
 export interface NegotiationHandlerDeps {
   store: NegotiationStore;
+  /**
+   * Called before every outbound HTTP request to a Consumer's callbackAddress.
+   * Return a full Authorization header value (e.g. 'Bearer <token>') or
+   * undefined to send no Authorization header.
+   */
+  getOutboundToken?: (consumerCallbackUrl: string) => Promise<string | undefined>;
+  /**
+   * The public base URL of this Provider's DSP API.
+   * Used as `callbackAddress` in outbound ContractOfferMessage bodies so the
+   * Consumer knows where to call back. Example: 'https://provider.example/dsp'
+   */
+  providerAddress?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Internal outbound HTTP helper
+// ---------------------------------------------------------------------------
+
+async function providerPost(
+  url: string,
+  body: unknown,
+  getToken?: (url: string) => Promise<string | undefined>
+): Promise<void> {
+  const token = getToken ? await getToken(url) : undefined;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = token;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Provider callback failed: ${res.status} ${url}\n${text}`);
+  }
 }
 
 function negotiationResponse(n: ContractNegotiation) {
@@ -203,52 +244,149 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
   }
 
   // -------------------------------------------------------------------------
-  // Provider-initiated helpers (called by provider business logic,
-  // not directly by Consumer HTTP requests)
+  // Provider-initiated helpers — update local state AND notify the Consumer
+  // via their callbackAddress. All methods are safe to await in business logic.
   // -------------------------------------------------------------------------
 
   /**
-   * Transition an existing negotiation to AGREED and attach the agreement.
-   * Called by provider business logic after processing ACCEPTED state.
+   * Transitions ACCEPTED → AGREED, attaches the agreement, and POSTs
+   * ContractAgreementMessage to the Consumer's callbackAddress (§8.3.5).
    */
   async function sendAgreement(
     providerPid: string,
-    agreement: import('../../types/negotiation').Agreement
+    agreement: Agreement
   ): Promise<ContractNegotiation> {
     const negotiation = await deps.store.findByProviderPid(providerPid);
     if (!negotiation) throw new Error(`Negotiation not found: ${providerPid}`);
+    if (!negotiation.callbackAddress) throw new Error(`Negotiation '${providerPid}' has no callbackAddress.`);
 
-    const nextState = nextNegotiationState(
-      negotiation.state,
-      'ContractAgreementMessage',
-      'PROVIDER'
-    );
+    const nextState = nextNegotiationState(negotiation.state, 'ContractAgreementMessage', 'PROVIDER');
+    const updated = await deps.store.update(providerPid, {
+      state: nextState,
+      agreement: { ...agreement, timestamp: agreement.timestamp ?? nowIso() },
+    });
 
-    const agreementWithTimestamp = {
-      ...agreement,
-      timestamp: agreement.timestamp ?? nowIso(),
+    const msg: ContractAgreementMessage = {
+      '@context': [DSP_CONTEXT],
+      '@type': 'ContractAgreementMessage',
+      providerPid: updated.providerPid,
+      consumerPid: updated.consumerPid,
+      agreement: updated.agreement!,
     };
 
-    return deps.store.update(providerPid, {
-      state: nextState,
-      agreement: agreementWithTimestamp,
-    });
+    await providerPost(
+      buildUrl(negotiation.callbackAddress, `/negotiations/${encodeURIComponent(updated.consumerPid)}/agreement`),
+      msg,
+      deps.getOutboundToken
+    );
+
+    return updated;
   }
 
   /**
-   * Transition a VERIFIED negotiation to FINALIZED.
-   * Called by provider business logic.
+   * Transitions VERIFIED → FINALIZED and POSTs ContractNegotiationEventMessage
+   * (eventType: FINALIZED) to the Consumer's callbackAddress (§8.3.6).
    */
   async function finalizeNegotiation(providerPid: string): Promise<ContractNegotiation> {
     const negotiation = await deps.store.findByProviderPid(providerPid);
     if (!negotiation) throw new Error(`Negotiation not found: ${providerPid}`);
+    if (!negotiation.callbackAddress) throw new Error(`Negotiation '${providerPid}' has no callbackAddress.`);
 
     const nextState = nextNegotiationState(
       negotiation.state,
       'ContractNegotiationEventMessage:FINALIZED',
       'PROVIDER'
     );
-    return deps.store.update(providerPid, { state: nextState });
+    const updated = await deps.store.update(providerPid, { state: nextState });
+
+    const msg: ContractNegotiationEventMessage = {
+      '@context': [DSP_CONTEXT],
+      '@type': 'ContractNegotiationEventMessage',
+      providerPid: updated.providerPid,
+      consumerPid: updated.consumerPid,
+      eventType: 'FINALIZED',
+    };
+
+    await providerPost(
+      buildUrl(negotiation.callbackAddress, `/negotiations/${encodeURIComponent(updated.consumerPid)}/events`),
+      msg,
+      deps.getOutboundToken
+    );
+
+    return updated;
+  }
+
+  /**
+   * Terminates the negotiation from the provider side and POSTs
+   * ContractNegotiationTerminationMessage to the Consumer's callbackAddress (§8.3.7).
+   */
+  async function terminateNegotiationAsProvider(
+    providerPid: string,
+    opts?: { code?: string; reason?: string[] }
+  ): Promise<ContractNegotiation> {
+    const negotiation = await deps.store.findByProviderPid(providerPid);
+    if (!negotiation) throw new Error(`Negotiation not found: ${providerPid}`);
+    if (!negotiation.callbackAddress) throw new Error(`Negotiation '${providerPid}' has no callbackAddress.`);
+
+    const nextState = nextNegotiationState(
+      negotiation.state,
+      'ContractNegotiationTerminationMessage',
+      'PROVIDER'
+    );
+    const updated = await deps.store.update(providerPid, { state: nextState });
+
+    const msg: ContractNegotiationTerminationMessage = {
+      '@context': [DSP_CONTEXT],
+      '@type': 'ContractNegotiationTerminationMessage',
+      providerPid: updated.providerPid,
+      consumerPid: updated.consumerPid,
+      ...opts,
+    };
+
+    await providerPost(
+      buildUrl(negotiation.callbackAddress, `/negotiations/${encodeURIComponent(updated.consumerPid)}/termination`),
+      msg,
+      deps.getOutboundToken
+    );
+
+    return updated;
+  }
+
+  /**
+   * Provider sends a counter-offer on an existing negotiation (REQUESTED → OFFERED)
+   * and POSTs ContractOfferMessage to the Consumer's callbackAddress (§8.3.4).
+   *
+   * Requires `providerAddress` to be set in `DspProviderOptions` so the Consumer
+   * knows where to call back.
+   */
+  async function sendCounterOffer(
+    providerPid: string,
+    offer: MessageOffer
+  ): Promise<ContractNegotiation> {
+    const negotiation = await deps.store.findByProviderPid(providerPid);
+    if (!negotiation) throw new Error(`Negotiation not found: ${providerPid}`);
+    if (!negotiation.callbackAddress) throw new Error(`Negotiation '${providerPid}' has no callbackAddress.`);
+    if (!deps.providerAddress) throw new Error('providerAddress must be set in DspProviderOptions to send counter-offers.');
+
+    const nextState = nextNegotiationState(negotiation.state, 'ContractOfferMessage', 'PROVIDER');
+    const updated = await deps.store.update(providerPid, { state: nextState });
+
+    const msg: ContractOfferMessage = {
+      '@context': [DSP_CONTEXT],
+      '@type': 'ContractOfferMessage',
+      providerPid: updated.providerPid,
+      consumerPid: updated.consumerPid,
+      offer,
+      callbackAddress: deps.providerAddress,
+    };
+
+    await providerPost(
+      buildUrl(negotiation.callbackAddress, `/negotiations/${encodeURIComponent(updated.consumerPid)}/offers`),
+      msg,
+      deps.getOutboundToken
+    );
+
+    return updated;
   }
 
   return {
@@ -260,5 +398,7 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
     terminateNegotiation,
     sendAgreement,
     finalizeNegotiation,
+    terminateNegotiationAsProvider,
+    sendCounterOffer,
   };
 }
