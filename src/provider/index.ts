@@ -2,6 +2,7 @@ import { Router, RequestHandler, Request, Response, NextFunction } from 'express
 import { DspStore, CatalogStore } from '../store/interfaces';
 import { VersionEntry } from '../types/common';
 import { Catalog } from '../types/catalog';
+import { ProviderNegotiationHooks, ProviderTransferHooks } from '../types/hooks';
 import { makeVersionRouter } from './routes/version.routes';
 import { makeCatalogRouter } from './routes/catalog.routes';
 import { makeNegotiationRouter } from './routes/negotiation.routes';
@@ -62,6 +63,19 @@ export interface DspProviderOptions {
    * Example: 'https://my-provider.example.com/dsp'
    */
   providerAddress?: string;
+
+  /**
+   * Optional hooks fired after each inbound Consumer message is processed.
+   * Use these to run business logic in response to protocol events — e.g.
+   * call `provider.negotiation.sendAgreement()` inside `onNegotiationAccepted`.
+   *
+   * Hooks are fire-and-forget: the HTTP response is already sent before they
+   * run. Errors thrown inside a hook are logged but do not affect the protocol.
+   */
+  hooks?: {
+    negotiation?: ProviderNegotiationHooks;
+    transfer?: ProviderTransferHooks;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -114,8 +128,14 @@ export function createDspProvider(options: DspProviderOptions): DspProvider {
     },
     auth
   ));
-  router.use('/negotiations', makeNegotiationRouter({ store: options.store.negotiation }, auth));
-  router.use('/transfers', makeTransferRouter({ store: options.store.transfer }, auth));
+  router.use('/negotiations', makeNegotiationRouter({
+    store: options.store.negotiation,
+    hooks: options.hooks?.negotiation,
+  }, auth));
+  router.use('/transfers', makeTransferRouter({
+    store: options.store.transfer,
+    hooks: options.hooks?.transfer,
+  }, auth));
   router.use(errorHandler);
 
   // Well-known router (mount at root)

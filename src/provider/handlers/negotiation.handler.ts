@@ -17,7 +17,8 @@ import {
   InvalidNegotiationTransitionError,
   NegotiationMessageType,
 } from '../../state-machines/negotiation.state-machine';
-import { generateId, nowIso, buildUrl } from '../../utils';
+import { generateId, nowIso, buildUrl, fireHook } from '../../utils';
+import { ProviderNegotiationHooks } from '../../types/hooks';
 
 export interface NegotiationHandlerDeps {
   store: NegotiationStore;
@@ -33,6 +34,8 @@ export interface NegotiationHandlerDeps {
    * Consumer knows where to call back. Example: 'https://provider.example/dsp'
    */
   providerAddress?: string;
+  /** Optional hooks fired after each inbound Consumer message is processed. */
+  hooks?: ProviderNegotiationHooks;
 }
 
 // ---------------------------------------------------------------------------
@@ -122,9 +125,11 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
         consumerPid: body.consumerPid,
         state: nextState,
         callbackAddress: body.callbackAddress,
+        offer: body.offer,
       });
 
       res.status(201).json(negotiationResponse(negotiation));
+      fireHook(deps.hooks?.onNegotiationRequested, negotiation);
     } catch (err) { next(err); }
   }
 
@@ -133,6 +138,7 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
    */
   async function makeContractOffer(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const body = req.body as ContractRequestMessage;
       const negotiation = await deps.store.findByProviderPid(req.params.providerPid);
       if (!negotiation) { notFound(res, req.params.providerPid); return; }
 
@@ -144,8 +150,9 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
         throw err;
       }
 
-      const updated = await deps.store.update(negotiation.providerPid, { state: nextState });
+      const updated = await deps.store.update(negotiation.providerPid, { state: nextState, offer: body.offer });
       res.status(200).json(negotiationResponse(updated));
+      fireHook(deps.hooks?.onNegotiationRequested, updated);
     } catch (err) { next(err); }
   }
 
@@ -185,6 +192,7 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
 
       const updated = await deps.store.update(negotiation.providerPid, { state: nextState });
       res.status(200).json(negotiationResponse(updated));
+      fireHook(deps.hooks?.onNegotiationAccepted, updated);
     } catch (err) { next(err); }
   }
 
@@ -209,9 +217,9 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
         throw err;
       }
 
-      // After VERIFIED, provider should send FINALIZED event via callback — not handled here
       const updated = await deps.store.update(negotiation.providerPid, { state: nextState });
       res.status(200).json(negotiationResponse(updated));
+      fireHook(deps.hooks?.onAgreementVerified, updated);
     } catch (err) { next(err); }
   }
 
@@ -240,6 +248,7 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
       void body;
       const updated = await deps.store.update(negotiation.providerPid, { state: nextState });
       res.status(200).json(negotiationResponse(updated));
+      fireHook(deps.hooks?.onNegotiationTerminated, updated);
     } catch (err) { next(err); }
   }
 

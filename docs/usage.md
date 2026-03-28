@@ -24,8 +24,11 @@ This library implements the [Eclipse Dataspace Protocol (DSP) 2025-1](https://ec
   - [Sending a counter-offer](#sending-a-counter-offer)
   - [Starting a transfer](#starting-a-transfer)
   - [Completing, suspending, or terminating a transfer](#completing-suspending-or-terminating-a-transfer)
+- [Reacting to inbound messages (hooks)](#reacting-to-inbound-messages-hooks)
+  - [Consumer-side hooks](#consumer-side-hooks)
+  - [Provider-side hooks](#provider-side-hooks)
 - [Error handling](#error-handling)
-- [Architecture note: why does the Consumer have a client?](#architecture-note-why-does-the-consumer-have-a-client)
+- [Architecture note: the two styles of outbound HTTP](#architecture-note-the-two-styles-of-outbound-http)
 
 ---
 
@@ -122,6 +125,28 @@ const consumer = createDspConsumer({
     negotiation: store.negotiation,
     transfer: store.transfer,
   },
+
+  // Optional: react to inbound Provider messages with your business logic
+  hooks: {
+    negotiation: {
+      onOfferReceived: async (negotiation) => {
+        // negotiation.offer has the Provider's terms — decide to accept or not
+        await consumer.negotiation.acceptNegotiation(PROVIDER_BASE, negotiation.providerPid, negotiation.consumerPid);
+      },
+      onAgreementReceived: async (negotiation) => {
+        await consumer.negotiation.verifyAgreement(PROVIDER_BASE, negotiation.providerPid, negotiation.consumerPid);
+      },
+      onNegotiationFinalized: async (negotiation) => {
+        // negotiation.agreement is now live — persist or act on it
+      },
+    },
+    transfer: {
+      onTransferStarted: async (transfer) => {
+        // For HTTP_PULL: transfer.dataAddress has the endpoint credentials
+        await dataPipeline.start(transfer.dataAddress);
+      },
+    },
+  },
 });
 
 // 3. Mount the callback router at the base of your callbackAddress path
@@ -147,7 +172,7 @@ This gives you the inbound callback endpoints Providers will call:
 
 ### Making outbound requests
 
-The syntax of these examples can be confusion as we are using consumer.catalog.requestCatalog(). It must be understood as "as a consumer, I want to use the catalog implementation to request a provider catalog".
+The syntax of these examples can be confusing as we are using consumer.catalog.requestCatalog(). It must be understood as "as a consumer, I want to use the catalog implementation to request a provider catalog".
 
 ```typescript
 const PROVIDER_BASE = 'https://provider.example.com/dsp';
@@ -590,6 +615,193 @@ await provider.transfer.providerTerminateTransfer(providerPid, {
 
 ---
 
+## Reacting to inbound messages (hooks)
+
+Both the Consumer and the Provider can register optional callbacks — **hooks** — that fire after each inbound DSP message has been validated, its state transition applied, and the HTTP response sent. Hooks are your bridge between the protocol and your business logic.
+
+**Key properties of hooks:**
+- All hooks are optional — omit any you don't need.
+- Hooks are **fire-and-forget**: the HTTP 200 response to the counterparty is sent first, then the hook runs asynchronously. Long-running work inside a hook will not delay the protocol.
+- If a hook throws, the error is caught and logged — it does not affect the protocol or the HTTP response.
+- The `negotiation` or `transfer` entity passed to the hook already reflects the **new state** after the transition.
+
+### Consumer-side hooks
+
+Fired when the Consumer receives a message **from the Provider**.
+
+```typescript
+const consumer = createDspConsumer({
+  callbackAddress: '...',
+  store: { negotiation: store.negotiation, transfer: store.transfer },
+  hooks: {
+    negotiation: {
+      /**
+       * Provider sent an offer (new or counter). State is now OFFERED.
+       * negotiation.offer contains the Provider's proposed terms.
+       * Typical response: accept, counter, or terminate.
+       */
+      onOfferReceived: async (negotiation) => {
+        if (policyEngine.acceptable(negotiation.offer)) {
+          await consumer.negotiation.acceptNegotiation(
+            negotiation.callbackAddress!, // Provider's DSP base URL
+            negotiation.providerPid,
+            negotiation.consumerPid,
+          );
+        } else {
+          await consumer.negotiation.terminateNegotiation(
+            negotiation.callbackAddress!,
+            negotiation.providerPid,
+            negotiation.consumerPid,
+            { code: 'POLICY_REJECTED' },
+          );
+        }
+      },
+
+      /**
+       * Provider sent the agreement. State is now AGREED.
+       * negotiation.agreement contains the full agreement terms.
+       * Typical response: verify the agreement.
+       */
+      onAgreementReceived: async (negotiation) => {
+        // Inspect negotiation.agreement before verifying
+        await consumer.negotiation.verifyAgreement(
+          negotiation.callbackAddress!,
+          negotiation.providerPid,
+          negotiation.consumerPid,
+        );
+      },
+
+      /** Provider finalized the negotiation. State is now FINALIZED. */
+      onNegotiationFinalized: async (negotiation) => {
+        await db.agreements.save(negotiation.agreement);
+      },
+
+      /** Provider terminated. State is now TERMINATED. */
+      onNegotiationTerminated: async (negotiation) => {
+        await notifications.send(`Negotiation ${negotiation.consumerPid} was terminated by provider.`);
+      },
+    },
+
+    transfer: {
+      /**
+       * Provider started the transfer. State is now STARTED.
+       * For HTTP_PULL: transfer.dataAddress has the endpoint and credentials.
+       */
+      onTransferStarted: async (transfer) => {
+        await dataPipeline.start(transfer.dataAddress);
+      },
+
+      /** Provider completed the transfer. State is now COMPLETED. */
+      onTransferCompleted: async (transfer) => {
+        await dataPipeline.finalize(transfer.consumerPid);
+      },
+
+      /** Provider suspended the transfer. State is now SUSPENDED. */
+      onTransferSuspended: async (transfer) => {
+        await dataPipeline.pause(transfer.consumerPid);
+      },
+
+      /** Provider terminated the transfer. State is now TERMINATED. */
+      onTransferTerminated: async (transfer) => {
+        await dataPipeline.abort(transfer.consumerPid);
+      },
+    },
+  },
+});
+```
+
+### Provider-side hooks
+
+Fired when the Provider receives a message **from the Consumer**. The two most action-critical are `onNegotiationRequested` (decide whether to agree) and `onTransferRequested` (start the data transfer).
+
+```typescript
+const provider = createDspProvider({
+  store,
+  providerAddress: 'https://my-provider.example.com/dsp',
+  getOutboundToken: async (url) => `Bearer ${await vault.get(url)}`,
+  hooks: {
+    negotiation: {
+      /**
+       * Consumer sent a new negotiation request (or counter-request).
+       * State is now REQUESTED. negotiation.offer has their proposed terms.
+       * Typical response: agree immediately, counter, or terminate.
+       */
+      onNegotiationRequested: async (negotiation) => {
+        if (policyEngine.approve(negotiation.offer)) {
+          await provider.negotiation.sendAgreement(negotiation.providerPid, {
+            '@id':      `urn:agreement:${crypto.randomUUID()}`,
+            '@type':    'Agreement',
+            target:     negotiation.offer.target,
+            assigner:   'urn:provider:my-org',
+            assignee:   'urn:consumer:their-org',
+            permission: negotiation.offer.permission ?? [],
+          });
+        } else {
+          await provider.negotiation.terminateNegotiationAsProvider(
+            negotiation.providerPid,
+            { code: 'POLICY_REJECTED' },
+          );
+        }
+      },
+
+      /**
+       * Consumer accepted the Provider's offer. State is now ACCEPTED.
+       * Typical response: call sendAgreement().
+       */
+      onNegotiationAccepted: async (negotiation) => {
+        await provider.negotiation.sendAgreement(negotiation.providerPid, buildAgreement(negotiation));
+      },
+
+      /**
+       * Consumer verified the agreement. State is now VERIFIED.
+       * Typical response: call finalizeNegotiation().
+       */
+      onAgreementVerified: async (negotiation) => {
+        await provider.negotiation.finalizeNegotiation(negotiation.providerPid);
+      },
+
+      /** Consumer terminated. State is now TERMINATED. */
+      onNegotiationTerminated: async (negotiation) => {
+        await notifications.send(`Negotiation ${negotiation.providerPid} was terminated by consumer.`);
+      },
+    },
+
+    transfer: {
+      /**
+       * Consumer sent a transfer request. State is now REQUESTED.
+       * Typical response: prepare the data endpoint and call providerStartTransfer().
+       */
+      onTransferRequested: async (transfer) => {
+        const dataAddress = await dataService.prepareEndpoint(transfer.agreementId);
+        await provider.transfer.providerStartTransfer(transfer.providerPid, dataAddress);
+      },
+
+      /** Consumer restarted a suspended transfer. State is now STARTED. Resume streaming. */
+      onTransferRestartedByConsumer: async (transfer) => {
+        await dataService.resume(transfer.providerPid);
+      },
+
+      /** Consumer completed the transfer. State is now COMPLETED. */
+      onTransferCompletedByConsumer: async (transfer) => {
+        await dataService.cleanup(transfer.providerPid);
+      },
+
+      /** Consumer suspended the transfer. State is now SUSPENDED. */
+      onTransferSuspendedByConsumer: async (transfer) => {
+        await dataService.pause(transfer.providerPid);
+      },
+
+      /** Consumer terminated the transfer. State is now TERMINATED. */
+      onTransferTerminatedByConsumer: async (transfer) => {
+        await dataService.abort(transfer.providerPid);
+      },
+    },
+  },
+});
+```
+
+---
+
 ## Error handling
 
 All DSP protocol errors are returned as JSON with the DSP error shape:
@@ -619,3 +831,30 @@ try {
   }
 }
 ```
+
+---
+
+## Architecture note: the two styles of outbound HTTP
+
+A common question when reading this library: *both the Consumer and the Provider make outbound HTTP calls — but only the Consumer has a `client/` module. Why?*
+
+The distinction is about **protocol role and context**:
+
+**Consumer `client/` -> cold calls, no prior context**
+
+The Consumer always *initiates* protocol sequences. When it calls `consumer.negotiation.requestNegotiation()`, it is starting a brand-new conversation: it constructs a full DSP message from scratch, targets an arbitrary Provider URL, and does not yet have any state stored locally. This warrants a dedicated typed client module; the calls are self-contained and independent of any prior stored record.
+
+**Provider `provider.negotiation.*` and `provider.transfer.*` — warm calls, context already stored**
+
+The Provider's outbound calls are *continuations* of a protocol sequence already in progress. When `provider.negotiation.sendAgreement(providerPid, agreement)` is called, the `providerPid` is looked up in the store, the Consumer's `callbackAddress` is read from that record, the state is mutated, and *then* the HTTP call is made. The logic is co-located with the handler because it directly shares the store and the state machine; it is a side-effect of a state transition, not a standalone request.
+
+**Summary:**
+
+| | Consumer client | Provider helpers |
+|---|---|---|
+| Who initiates | Always the Consumer | Always the Provider |
+| Prior state available | No — constructing from scratch | Yes - reads from store |
+| Target URL source | Caller supplies `providerBaseUrl` | Read from stored `callbackAddress` |
+| Lives in | `src/consumer/client/` | `src/provider/handlers/` |
+| Errors thrown | `DspClientError` (typed) | Generic `Error` |
+

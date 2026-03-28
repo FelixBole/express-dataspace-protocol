@@ -71,6 +71,16 @@ export { NegotiationState, NEGOTIATION_TERMINAL_STATES } from './types/negotiati
 export { TransferState, TRANSFER_TERMINAL_STATES } from './types/transfer';
 export { DSP_CONTEXT } from './types/common';
 
+// Hook interfaces
+export type {
+  NegotiationHook,
+  TransferHook,
+  ProviderNegotiationHooks,
+  ProviderTransferHooks,
+  ConsumerNegotiationHooks,
+  ConsumerTransferHooks,
+} from './types/hooks';
+
 // State machine utilities (for users who want to inspect transitions)
 export {
   isValidNegotiationTransition,

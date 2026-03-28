@@ -12,9 +12,13 @@ import {
   nextTransferState,
   InvalidTransferTransitionError,
 } from '../../state-machines/transfer.state-machine';
+import { fireHook } from '../../utils';
+import { ConsumerTransferHooks } from '../../types/hooks';
 
 export interface ConsumerTransferHandlerDeps {
   store: TransferStore;
+  /** Optional hooks fired after each inbound Provider message is processed. */
+  hooks?: ConsumerTransferHooks;
 }
 
 function transferResponse(t: TransferProcess) {
@@ -69,6 +73,7 @@ export function makeConsumerTransferHandlers(deps: ConsumerTransferHandlerDeps) 
         dataAddress: body.dataAddress ?? transfer.dataAddress,
       });
       res.status(200).json(transferResponse(updated));
+      fireHook(deps.hooks?.onTransferStarted, updated);
     } catch (err) { next(err); }
   }
 
@@ -90,6 +95,7 @@ export function makeConsumerTransferHandlers(deps: ConsumerTransferHandlerDeps) 
 
       const updated = await deps.store.update(transfer.providerPid, { state: nextState });
       res.status(200).json(transferResponse(updated));
+      fireHook(deps.hooks?.onTransferCompleted, updated);
     } catch (err) { next(err); }
   }
 
@@ -113,6 +119,7 @@ export function makeConsumerTransferHandlers(deps: ConsumerTransferHandlerDeps) 
       void body;
       const updated = await deps.store.update(transfer.providerPid, { state: nextState });
       res.status(200).json(transferResponse(updated));
+      fireHook(deps.hooks?.onTransferTerminated, updated);
     } catch (err) { next(err); }
   }
 
@@ -136,6 +143,7 @@ export function makeConsumerTransferHandlers(deps: ConsumerTransferHandlerDeps) 
       void body;
       const updated = await deps.store.update(transfer.providerPid, { state: nextState });
       res.status(200).json(transferResponse(updated));
+      fireHook(deps.hooks?.onTransferSuspended, updated);
     } catch (err) { next(err); }
   }
 

@@ -53,6 +53,13 @@ export interface ContractNegotiation {
   consumerPid: string;
   state: NegotiationState;
   agreement?: Agreement;
+  /**
+   * The current offer in play. Set when the Consumer sends a
+   * ContractRequestMessage (Provider side) or when the Provider sends a
+   * ContractOfferMessage (Consumer side). Available to hooks so
+   * business logic can inspect terms without a separate store look-up.
+   */
+  offer?: MessageOffer;
   /** Callback URL the other party sends messages to */
   callbackAddress?: string;
 }

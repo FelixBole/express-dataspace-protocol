@@ -14,7 +14,8 @@ import {
   nextTransferState,
   InvalidTransferTransitionError,
 } from '../../state-machines/transfer.state-machine';
-import { generateId, buildUrl } from '../../utils';
+import { generateId, buildUrl, fireHook } from '../../utils';
+import { ProviderTransferHooks } from '../../types/hooks';
 
 export interface TransferHandlerDeps {
   store: TransferStore;
@@ -24,6 +25,8 @@ export interface TransferHandlerDeps {
    * undefined to send no Authorization header.
    */
   getOutboundToken?: (consumerCallbackUrl: string) => Promise<string | undefined>;
+  /** Optional hooks fired after each inbound Consumer message is processed. */
+  hooks?: ProviderTransferHooks;
 }
 
 // ---------------------------------------------------------------------------
@@ -118,6 +121,7 @@ export function makeTransferHandlers(deps: TransferHandlerDeps) {
       });
 
       res.status(201).json(transferResponse(transfer));
+      fireHook(deps.hooks?.onTransferRequested, transfer);
     } catch (err) { next(err); }
   }
 
@@ -144,6 +148,7 @@ export function makeTransferHandlers(deps: TransferHandlerDeps) {
         dataAddress: body.dataAddress ?? transfer.dataAddress,
       });
       res.status(200).json(transferResponse(updated));
+      fireHook(deps.hooks?.onTransferRestartedByConsumer, updated);
     } catch (err) { next(err); }
   }
 
@@ -165,6 +170,7 @@ export function makeTransferHandlers(deps: TransferHandlerDeps) {
 
       const updated = await deps.store.update(transfer.providerPid, { state: nextState });
       res.status(200).json(transferResponse(updated));
+      fireHook(deps.hooks?.onTransferCompletedByConsumer, updated);
     } catch (err) { next(err); }
   }
 
@@ -188,6 +194,7 @@ export function makeTransferHandlers(deps: TransferHandlerDeps) {
       void body;
       const updated = await deps.store.update(transfer.providerPid, { state: nextState });
       res.status(200).json(transferResponse(updated));
+      fireHook(deps.hooks?.onTransferSuspendedByConsumer, updated);
     } catch (err) { next(err); }
   }
 
@@ -211,6 +218,7 @@ export function makeTransferHandlers(deps: TransferHandlerDeps) {
       void body;
       const updated = await deps.store.update(transfer.providerPid, { state: nextState });
       res.status(200).json(transferResponse(updated));
+      fireHook(deps.hooks?.onTransferTerminatedByConsumer, updated);
     } catch (err) { next(err); }
   }
 

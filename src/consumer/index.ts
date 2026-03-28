@@ -1,6 +1,7 @@
 import { Router, RequestHandler, Request, Response, NextFunction } from 'express';
 import { NegotiationStore, TransferStore } from '../store/interfaces';
 import { errorHandler } from '../middleware/error.middleware';
+import { ConsumerNegotiationHooks, ConsumerTransferHooks } from '../types/hooks';
 import { makeConsumerNegotiationRouter } from './routes/negotiation.callback.routes';
 import { makeConsumerTransferRouter } from './routes/transfer.callback.routes';
 import { makeCatalogClient } from './client/catalog.client';
@@ -36,6 +37,19 @@ export interface DspConsumerOptions {
    * token string (or undefined to omit the Authorization header).
    */
   getOutboundToken?: (providerBaseUrl: string) => Promise<string | undefined>;
+
+  /**
+   * Optional hooks fired after each inbound Provider message is processed.
+   * Use these to run business logic in response to protocol events — e.g.
+   * call `consumer.negotiation.verifyAgreement()` inside `onAgreementReceived`.
+   *
+   * Hooks are fire-and-forget: the HTTP response is already sent before they
+   * run. Errors thrown inside a hook are logged but do not affect the protocol.
+   */
+  hooks?: {
+    negotiation?: ConsumerNegotiationHooks;
+    transfer?: ConsumerTransferHooks;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -77,11 +91,11 @@ export function createDspConsumer(options: DspConsumerOptions): DspConsumer {
   const callbackRouter = Router();
   callbackRouter.use(
     '/negotiations',
-    makeConsumerNegotiationRouter({ store: options.store.negotiation }, auth)
+    makeConsumerNegotiationRouter({ store: options.store.negotiation, hooks: options.hooks?.negotiation }, auth)
   );
   callbackRouter.use(
     '/transfers',
-    makeConsumerTransferRouter({ store: options.store.transfer }, auth)
+    makeConsumerTransferRouter({ store: options.store.transfer, hooks: options.hooks?.transfer }, auth)
   );
   callbackRouter.use(errorHandler);
 

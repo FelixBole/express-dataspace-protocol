@@ -14,10 +14,13 @@ import {
   InvalidNegotiationTransitionError,
   NegotiationMessageType,
 } from '../../state-machines/negotiation.state-machine';
-import { generateId } from '../../utils';
+import { generateId, fireHook } from '../../utils';
+import { ConsumerNegotiationHooks } from '../../types/hooks';
 
 export interface ConsumerNegotiationHandlerDeps {
   store: NegotiationStore;
+  /** Optional hooks fired after each inbound Provider message is processed. */
+  hooks?: ConsumerNegotiationHooks;
 }
 
 function negotiationResponse(n: ContractNegotiation) {
@@ -83,9 +86,11 @@ export function makeConsumerNegotiationHandlers(deps: ConsumerNegotiationHandler
         consumerPid: `urn:uuid:${generateId()}`,
         state: nextState,
         callbackAddress: body.callbackAddress,
+        offer: body.offer,
       });
 
       res.status(201).json(negotiationResponse(negotiation));
+      fireHook(deps.hooks?.onOfferReceived, negotiation);
     } catch (err) { next(err); }
   }
 
@@ -95,6 +100,7 @@ export function makeConsumerNegotiationHandlers(deps: ConsumerNegotiationHandler
    */
   async function receiveOffer(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const body = req.body as ContractOfferMessage;
       const negotiation = await deps.store.findByConsumerPid(req.params.consumerPid);
       if (!negotiation) { notFound(res, req.params.consumerPid); return; }
 
@@ -106,8 +112,9 @@ export function makeConsumerNegotiationHandlers(deps: ConsumerNegotiationHandler
         throw err;
       }
 
-      const updated = await deps.store.update(negotiation.providerPid, { state: nextState });
+      const updated = await deps.store.update(negotiation.providerPid, { state: nextState, offer: body.offer });
       res.status(200).json(negotiationResponse(updated));
+      fireHook(deps.hooks?.onOfferReceived, updated);
     } catch (err) { next(err); }
   }
 
@@ -134,6 +141,7 @@ export function makeConsumerNegotiationHandlers(deps: ConsumerNegotiationHandler
         agreement: body.agreement,
       });
       res.status(200).json(negotiationResponse(updated));
+      fireHook(deps.hooks?.onAgreementReceived, updated);
     } catch (err) { next(err); }
   }
 
@@ -169,6 +177,7 @@ export function makeConsumerNegotiationHandlers(deps: ConsumerNegotiationHandler
 
       const updated = await deps.store.update(negotiation.providerPid, { state: nextState });
       res.status(200).json(negotiationResponse(updated));
+      fireHook(deps.hooks?.onNegotiationFinalized, updated);
     } catch (err) { next(err); }
   }
 
@@ -197,6 +206,7 @@ export function makeConsumerNegotiationHandlers(deps: ConsumerNegotiationHandler
       void body;
       const updated = await deps.store.update(negotiation.providerPid, { state: nextState });
       res.status(200).json(negotiationResponse(updated));
+      fireHook(deps.hooks?.onNegotiationTerminated, updated);
     } catch (err) { next(err); }
   }
 
