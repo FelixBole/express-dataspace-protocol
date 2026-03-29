@@ -1,6 +1,6 @@
 {
 	"name": "express-dataspace-protocol",
-	"version": "0.2.1",
+	"version": "0.3.0",
 	"description": "Express.js implementation of the Eclipse Dataspace Protocol (DSP)",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",

@@ -47,7 +47,15 @@ export interface Agreement {
 	 */
 	target: string;
 	timestamp?: string;
+	/**
+	 * The content of this property is a dataspace-specific unique identifier
+	 * of the agreement party for the provider role.
+	 */
 	assigner: string;
+	/**
+	 * The content of this property is a dataspace-specific unique identifier
+	 * of the agreement party for the consumer role.
+	 */
 	assignee: string;
 	permission?: Permission[];
 	prohibition?: Prohibition[];

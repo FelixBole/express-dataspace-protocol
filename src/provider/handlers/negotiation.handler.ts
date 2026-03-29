@@ -403,10 +403,12 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
 	/**
 	 * Transitions ACCEPTED → AGREED, attaches the agreement, and POSTs
 	 * ContractAgreementMessage to the Consumer's callbackAddress (§8.3.5).
+	 *
+	 * `@type` is automatically set to `"Agreement"` — do not supply it.
 	 */
 	async function sendAgreement(
 		providerPid: string,
-		agreement: Agreement,
+		agreement: Omit<Agreement, "@type">,
 	): Promise<ContractNegotiation> {
 		const negotiation = await deps.store.findByProviderPid(providerPid);
 		if (!negotiation)
@@ -424,6 +426,7 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
 		const updated = await deps.store.update(providerPid, {
 			state: nextState,
 			agreement: {
+				"@type": "Agreement",
 				...agreement,
 				timestamp: agreement.timestamp ?? nowIso(),
 			},

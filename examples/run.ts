@@ -193,18 +193,15 @@ async function main() {
 					);
 					log.provider("  → Sending agreement (AGREED)...");
 
-					const agreement: Agreement = {
-						"@id": `urn:agreement:${randomUUID()}`,
-						"@type": "Agreement",
-						target: negotiation.offer?.target ?? DATASET_ID,
-						assigner: "urn:connector:provider-example",
-						assignee: "urn:connector:consumer-example",
-						permission: negotiation.offer?.permission ?? [],
-					};
-
 					await provider.negotiation.sendAgreement(
 						negotiation.providerPid,
-						agreement,
+						{
+							"@id": `urn:agreement:${randomUUID()}`,
+							target: negotiation.offer?.target ?? DATASET_ID,
+							assigner: "urn:connector:provider-example",
+							assignee: "urn:connector:consumer-example",
+							permission: negotiation.offer?.permission ?? [],
+						},
 					);
 				},
 
