@@ -100,8 +100,8 @@ const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
 // Negotiation hooks
 // ---------------------------------------------------------------------------
 
-describe("Consumer — negotiation hooks", () => {
-	describe("onOfferReceived — POST /negotiations/offers (provider initiates)", () => {
+describe("Consumer - negotiation hooks", () => {
+	describe("onOfferReceived - POST /negotiations/offers (provider initiates)", () => {
 		it("is called with state=OFFERED and the offer terms", async () => {
 			const hook = jest.fn();
 			const { app } = makeNegotiationApp({ onOfferReceived: hook });
@@ -135,7 +135,7 @@ describe("Consumer — negotiation hooks", () => {
 		});
 	});
 
-	describe("onOfferReceived — POST /negotiations/:consumerPid/offers (counter-offer)", () => {
+	describe("onOfferReceived - POST /negotiations/:consumerPid/offers (counter-offer)", () => {
 		it("is called with state=OFFERED and updated offer terms", async () => {
 			const hook = jest.fn();
 			const { app, negStore } = makeNegotiationApp({
@@ -169,7 +169,7 @@ describe("Consumer — negotiation hooks", () => {
 		});
 	});
 
-	describe("onAgreementReceived — POST /negotiations/:consumerPid/agreement", () => {
+	describe("onAgreementReceived - POST /negotiations/:consumerPid/agreement", () => {
 		it("is called with state=AGREED and the agreement attached", async () => {
 			const hook = jest.fn();
 			const { app, negStore } = makeNegotiationApp({
@@ -207,7 +207,7 @@ describe("Consumer — negotiation hooks", () => {
 		});
 	});
 
-	describe("onNegotiationFinalized — POST /negotiations/:consumerPid/events", () => {
+	describe("onNegotiationFinalized - POST /negotiations/:consumerPid/events", () => {
 		it("is called with state=FINALIZED", async () => {
 			const hook = jest.fn();
 			const { app, negStore } = makeNegotiationApp({
@@ -237,7 +237,7 @@ describe("Consumer — negotiation hooks", () => {
 		});
 	});
 
-	describe("onNegotiationTerminated — POST /negotiations/:consumerPid/termination", () => {
+	describe("onNegotiationTerminated - POST /negotiations/:consumerPid/termination", () => {
 		it("is called with state=TERMINATED", async () => {
 			const hook = jest.fn();
 			const { app, negStore } = makeNegotiationApp({
@@ -297,7 +297,7 @@ describe("Consumer — negotiation hooks", () => {
 		});
 
 		it("no-op when no hook is registered", async () => {
-			// No hooks at all — must not crash
+			// No hooks at all - must not crash
 			const { app, negStore } = makeNegotiationApp();
 			seedNegotiation(negStore, { state: NegotiationState.VERIFIED });
 
@@ -322,8 +322,8 @@ describe("Consumer — negotiation hooks", () => {
 // Transfer hooks
 // ---------------------------------------------------------------------------
 
-describe("Consumer — transfer hooks", () => {
-	describe("onTransferStarted — POST /transfers/:consumerPid/start", () => {
+describe("Consumer - transfer hooks", () => {
+	describe("onTransferStarted - POST /transfers/:consumerPid/start", () => {
 		it("is called with state=STARTED and the dataAddress", async () => {
 			const hook = jest.fn();
 			const { app, xferStore } = makeTransferApp({
@@ -360,7 +360,7 @@ describe("Consumer — transfer hooks", () => {
 		});
 	});
 
-	describe("onTransferCompleted — POST /transfers/:consumerPid/completion", () => {
+	describe("onTransferCompleted - POST /transfers/:consumerPid/completion", () => {
 		it("is called with state=COMPLETED", async () => {
 			const hook = jest.fn();
 			const { app, xferStore } = makeTransferApp({
@@ -387,7 +387,7 @@ describe("Consumer — transfer hooks", () => {
 		});
 	});
 
-	describe("onTransferSuspended — POST /transfers/:consumerPid/suspension", () => {
+	describe("onTransferSuspended - POST /transfers/:consumerPid/suspension", () => {
 		it("is called with state=SUSPENDED", async () => {
 			const hook = jest.fn();
 			const { app, xferStore } = makeTransferApp({
@@ -414,7 +414,7 @@ describe("Consumer — transfer hooks", () => {
 		});
 	});
 
-	describe("onTransferTerminated — POST /transfers/:consumerPid/termination", () => {
+	describe("onTransferTerminated - POST /transfers/:consumerPid/termination", () => {
 		it("is called with state=TERMINATED", async () => {
 			const hook = jest.fn();
 			const { app, xferStore } = makeTransferApp({

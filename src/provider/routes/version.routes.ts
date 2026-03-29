@@ -14,7 +14,7 @@ export function makeVersionRouter(options: VersionRouteOptions): Router {
 		protocolVersions: [options.versionEntry],
 	};
 
-	// §4.3 — MUST be unauthenticated and unversioned
+	// §4.3 - MUST be unauthenticated and unversioned
 	router.get("/.well-known/dspace-version", (_req, res) => {
 		res.status(200).json(response);
 	});

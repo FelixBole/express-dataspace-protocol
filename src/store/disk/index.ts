@@ -10,7 +10,7 @@ export interface DiskStoreOptions {
 	 * Directory where JSON files will be stored.
 	 * Will be created if it does not exist.
 	 *
-	 * **NOT production-safe** — no locking, no replication.
+	 * **NOT production-safe** - no locking, no replication.
 	 * Intended for testing and demonstration purposes only.
 	 */
 	dir: string;

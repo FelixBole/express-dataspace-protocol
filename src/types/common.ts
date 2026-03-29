@@ -9,7 +9,7 @@ export const DSP_CONTEXT = "https://w3id.org/dspace/2025/1/context.jsonld";
 export type DspContext = [typeof DSP_CONTEXT, ...string[]];
 
 // ---------------------------------------------------------------------------
-// DataAddress — used in transfer messages (§9.2)
+// DataAddress - used in transfer messages (§9.2)
 // ---------------------------------------------------------------------------
 
 export interface EndpointProperty {
@@ -51,20 +51,7 @@ export interface VersionResponse {
 }
 
 // ---------------------------------------------------------------------------
-// Generic DSP error body
-// ---------------------------------------------------------------------------
-
-export interface DspErrorBody {
-	"@context": DspContext;
-	"@type": string;
-	providerPid?: string;
-	consumerPid?: string;
-	code?: string;
-	reason?: string[];
-}
-
-// ---------------------------------------------------------------------------
-// Actor type — which side is performing an action
+// Actor type - which side is performing an action
 // ---------------------------------------------------------------------------
 
 export type DspActor = "PROVIDER" | "CONSUMER";

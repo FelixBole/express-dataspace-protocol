@@ -49,7 +49,7 @@ export function makeTransferClient(deps: TransferClientDeps) {
 	}
 
 	/**
-	 * POST <providerBase>/transfers/request — §10.2.2
+	 * POST <providerBase>/transfers/request - §10.2.2
 	 * Initiate a new transfer process.
 	 */
 	async function requestTransfer(
@@ -97,7 +97,7 @@ export function makeTransferClient(deps: TransferClientDeps) {
 	}
 
 	/**
-	 * POST <providerBase>/transfers/:providerPid/completion — §10.2.4
+	 * POST <providerBase>/transfers/:providerPid/completion - §10.2.4
 	 */
 	async function completeTransfer(
 		providerBaseUrl: string,
@@ -126,7 +126,7 @@ export function makeTransferClient(deps: TransferClientDeps) {
 	}
 
 	/**
-	 * POST <providerBase>/transfers/:providerPid/suspension — §10.2.6
+	 * POST <providerBase>/transfers/:providerPid/suspension - §10.2.6
 	 */
 	async function suspendTransfer(
 		providerBaseUrl: string,
@@ -160,7 +160,7 @@ export function makeTransferClient(deps: TransferClientDeps) {
 	}
 
 	/**
-	 * POST <providerBase>/transfers/:providerPid/termination — §10.2.5
+	 * POST <providerBase>/transfers/:providerPid/termination - §10.2.5
 	 */
 	async function terminateTransfer(
 		providerBaseUrl: string,

@@ -60,7 +60,7 @@ export interface TransferStore {
 }
 
 // ---------------------------------------------------------------------------
-// Composite store — all three together
+// Composite store - all three together
 // ---------------------------------------------------------------------------
 
 export interface DspStore {

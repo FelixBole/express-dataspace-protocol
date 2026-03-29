@@ -1,17 +1,18 @@
 import { Request, Response, NextFunction } from "express";
 import { CatalogStore } from "../../store/interfaces";
-import { CatalogRequestMessage } from "../../types/catalog";
+import { CatalogRequestMessage, Catalog } from "../../types/catalog";
 import { DSP_CONTEXT } from "../../types/common";
 
 type CatalogFilterFn = (
 	filter: unknown,
 	store: CatalogStore,
-) => Promise<import("../../types/catalog").Catalog>;
+) => Promise<Catalog>;
+
 type CatalogPaginateFn = (
-	catalog: import("../../types/catalog").Catalog,
+	catalog: Catalog,
 	req: Request,
 ) => {
-	data: import("../../types/catalog").Catalog;
+	data: Catalog;
 	next?: string;
 	prev?: string;
 };
@@ -24,7 +25,7 @@ export interface CatalogHandlerDeps {
 
 export function makeCatalogHandlers(deps: CatalogHandlerDeps) {
 	/**
-	 * POST /catalog/request — §6.2.1
+	 * POST /catalog/request - §6.2.1
 	 * Consumer sends CatalogRequestMessage; Provider responds with Catalog.
 	 */
 	async function requestCatalog(
@@ -73,7 +74,7 @@ export function makeCatalogHandlers(deps: CatalogHandlerDeps) {
 	}
 
 	/**
-	 * GET /catalog/datasets/:id — §6.2.2
+	 * GET /catalog/datasets/:id - §6.2.2
 	 * Consumer requests a specific Dataset.
 	 */
 	async function getDataset(

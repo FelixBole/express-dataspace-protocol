@@ -1,6 +1,6 @@
 /**
  * In-memory implementations of CatalogStore, NegotiationStore, and TransferStore.
- * For use in tests only — no persistence.
+ * For use in tests only - no persistence.
  */
 
 import {

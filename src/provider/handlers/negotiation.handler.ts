@@ -80,7 +80,7 @@ function negotiationResponse(n: ContractNegotiation) {
 }
 
 function notFound(res: Response, providerPid: string) {
-	// §8.1.2.2 — return 404 when not found or unauthorised
+	// §8.1.2.2 - return 404 when not found or unauthorised
 	res.status(404).json({
 		"@context": [DSP_CONTEXT],
 		"@type": "ContractNegotiationError",
@@ -100,7 +100,7 @@ function badTransition(res: Response, err: InvalidNegotiationTransitionError) {
 
 export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
 	/**
-	 * GET /negotiations/:providerPid — §8.2.1
+	 * GET /negotiations/:providerPid - §8.2.1
 	 */
 	async function getNegotiation(
 		req: Request,
@@ -122,7 +122,7 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
 	}
 
 	/**
-	 * POST /negotiations/request — §8.2.2
+	 * POST /negotiations/request - §8.2.2
 	 *
 	 * - No `providerPid` in body → Consumer initiates a new negotiation (201).
 	 * - `providerPid` present → Consumer re-requests on an existing negotiation,
@@ -204,7 +204,7 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
 	}
 
 	/**
-	 * POST /negotiations/:providerPid/request — §8.2.3 — Consumer counter-offer
+	 * POST /negotiations/:providerPid/request - §8.2.3 - Consumer counter-offer
 	 */
 	async function makeContractOffer(
 		req: Request,
@@ -248,7 +248,7 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
 	}
 
 	/**
-	 * POST /negotiations/:providerPid/events — §8.2.4
+	 * POST /negotiations/:providerPid/events - §8.2.4
 	 * Consumer sends ACCEPTED event.
 	 */
 	async function acceptNegotiation(
@@ -308,7 +308,7 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
 	}
 
 	/**
-	 * POST /negotiations/:providerPid/agreement/verification — §8.2.5
+	 * POST /negotiations/:providerPid/agreement/verification - §8.2.5
 	 * Consumer verifies the agreement.
 	 */
 	async function verifyAgreement(
@@ -351,7 +351,7 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
 	}
 
 	/**
-	 * POST /negotiations/:providerPid/termination — §8.2.6
+	 * POST /negotiations/:providerPid/termination - §8.2.6
 	 * Consumer terminates the negotiation.
 	 */
 	async function terminateNegotiation(
@@ -396,7 +396,7 @@ export function makeNegotiationHandlers(deps: NegotiationHandlerDeps) {
 	}
 
 	// -------------------------------------------------------------------------
-	// Provider-initiated helpers — update local state AND notify the Consumer
+	// Provider-initiated helpers - update local state AND notify the Consumer
 	// via their callbackAddress. All methods are safe to await in business logic.
 	// -------------------------------------------------------------------------
 

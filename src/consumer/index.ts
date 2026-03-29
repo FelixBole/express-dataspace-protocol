@@ -48,7 +48,7 @@ export interface DspConsumerOptions {
 
 	/**
 	 * Optional hooks fired after each inbound Provider message is processed.
-	 * Use these to run business logic in response to protocol events — e.g.
+	 * Use these to run business logic in response to protocol events - e.g.
 	 * call `consumer.negotiation.verifyAgreement()` inside `onAgreementReceived`.
 	 *
 	 * Hooks are fire-and-forget: the HTTP response is already sent before they
@@ -82,7 +82,7 @@ export interface DspConsumer {
 	/** Outbound client for Transfer Process Protocol requests */
 	transfer: ReturnType<typeof makeTransferClient>;
 
-	/** The computed callbackAddress — matches options.callbackAddress */
+	/** The computed callbackAddress - matches options.callbackAddress */
 	callbackAddress: string;
 }
 

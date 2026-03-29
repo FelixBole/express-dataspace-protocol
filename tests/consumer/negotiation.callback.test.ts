@@ -42,7 +42,7 @@ function seedNegotiation(
 	return negotiation;
 }
 
-describe("Consumer — Negotiation callback endpoints (§8.3)", () => {
+describe("Consumer - Negotiation callback endpoints (§8.3)", () => {
 	describe("GET /negotiations/:consumerPid", () => {
 		it("returns 200 with negotiation details", async () => {
 			const { app, negStore } = makeApp();
@@ -69,7 +69,7 @@ describe("Consumer — Negotiation callback endpoints (§8.3)", () => {
 		});
 	});
 
-	describe("POST /negotiations/offers — provider initiates with offer", () => {
+	describe("POST /negotiations/offers - provider initiates with offer", () => {
 		it("creates a new consumer-side negotiation and returns 201", async () => {
 			const { app } = makeApp();
 
@@ -96,7 +96,7 @@ describe("Consumer — Negotiation callback endpoints (§8.3)", () => {
 		});
 	});
 
-	describe("POST /negotiations/:consumerPid/offers — provider counter-offer", () => {
+	describe("POST /negotiations/:consumerPid/offers - provider counter-offer", () => {
 		it("transitions REQUESTED → OFFERED on counter-offer", async () => {
 			const { app, negStore } = makeApp();
 			seedNegotiation(negStore, { state: NegotiationState.REQUESTED });
@@ -145,7 +145,7 @@ describe("Consumer — Negotiation callback endpoints (§8.3)", () => {
 		});
 	});
 
-	describe("POST /negotiations/:consumerPid/agreement — receive agreement", () => {
+	describe("POST /negotiations/:consumerPid/agreement - receive agreement", () => {
 		it("transitions ACCEPTED → AGREED on agreement receipt", async () => {
 			const { app, negStore } = makeApp();
 			seedNegotiation(negStore, { state: NegotiationState.ACCEPTED });
@@ -174,7 +174,7 @@ describe("Consumer — Negotiation callback endpoints (§8.3)", () => {
 		});
 	});
 
-	describe("POST /negotiations/:consumerPid/events — receive finalized event", () => {
+	describe("POST /negotiations/:consumerPid/events - receive finalized event", () => {
 		it("transitions VERIFIED → FINALIZED on finalized event", async () => {
 			const { app, negStore } = makeApp();
 			seedNegotiation(negStore, { state: NegotiationState.VERIFIED });
@@ -196,7 +196,7 @@ describe("Consumer — Negotiation callback endpoints (§8.3)", () => {
 		});
 	});
 
-	describe("POST /negotiations/:consumerPid/termination — receive termination", () => {
+	describe("POST /negotiations/:consumerPid/termination - receive termination", () => {
 		it("transitions OFFERED → TERMINATED", async () => {
 			const { app, negStore } = makeApp();
 			seedNegotiation(negStore, { state: NegotiationState.OFFERED });

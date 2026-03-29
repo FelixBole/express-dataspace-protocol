@@ -163,10 +163,10 @@ describe("Negotiation State Machine", () => {
 	});
 
 	// ---------------------------------------------------------------------------
-	// nextNegotiationState — happy paths
+	// nextNegotiationState - happy paths
 	// ---------------------------------------------------------------------------
 
-	describe("nextNegotiationState() — valid transitions", () => {
+	describe("nextNegotiationState() - valid transitions", () => {
 		it("returns REQUESTED when Consumer initiates", () => {
 			expect(
 				nextNegotiationState(
@@ -239,10 +239,10 @@ describe("Negotiation State Machine", () => {
 	});
 
 	// ---------------------------------------------------------------------------
-	// nextNegotiationState — error paths
+	// nextNegotiationState - error paths
 	// ---------------------------------------------------------------------------
 
-	describe("nextNegotiationState() — invalid transitions", () => {
+	describe("nextNegotiationState() - invalid transitions", () => {
 		it("throws InvalidNegotiationTransitionError on bad transition", () => {
 			expect(() =>
 				nextNegotiationState(

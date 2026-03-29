@@ -35,8 +35,8 @@ function seedTransfer(
 	return transfer;
 }
 
-describe("Provider — Transfer endpoints (§10.2)", () => {
-	describe("POST /dsp/transfers/request — initiate transfer", () => {
+describe("Provider - Transfer endpoints (§10.2)", () => {
+	describe("POST /dsp/transfers/request - initiate transfer", () => {
 		it("creates a new transfer process and returns 201", async () => {
 			const { app } = makeApp();
 
@@ -60,7 +60,7 @@ describe("Provider — Transfer endpoints (§10.2)", () => {
 		});
 	});
 
-	describe("GET /dsp/transfers/:providerPid — get transfer", () => {
+	describe("GET /dsp/transfers/:providerPid - get transfer", () => {
 		it("returns 200 with transfer process details", async () => {
 			const { app, xferStore } = makeApp();
 			seedTransfer(xferStore);
@@ -87,7 +87,7 @@ describe("Provider — Transfer endpoints (§10.2)", () => {
 		});
 	});
 
-	describe("POST /dsp/transfers/:providerPid/start — consumer restarts from SUSPENDED", () => {
+	describe("POST /dsp/transfers/:providerPid/start - consumer restarts from SUSPENDED", () => {
 		it("transitions SUSPENDED → STARTED", async () => {
 			const { app, xferStore } = makeApp();
 			seedTransfer(xferStore, { state: TransferState.SUSPENDED });
@@ -126,7 +126,7 @@ describe("Provider — Transfer endpoints (§10.2)", () => {
 		});
 	});
 
-	describe("POST /dsp/transfers/:providerPid/completion — complete transfer", () => {
+	describe("POST /dsp/transfers/:providerPid/completion - complete transfer", () => {
 		it("transitions STARTED → COMPLETED", async () => {
 			const { app, xferStore } = makeApp();
 			seedTransfer(xferStore, { state: TransferState.STARTED });
@@ -147,7 +147,7 @@ describe("Provider — Transfer endpoints (§10.2)", () => {
 		});
 	});
 
-	describe("POST /dsp/transfers/:providerPid/suspension — suspend transfer", () => {
+	describe("POST /dsp/transfers/:providerPid/suspension - suspend transfer", () => {
 		it("transitions STARTED → SUSPENDED", async () => {
 			const { app, xferStore } = makeApp();
 			seedTransfer(xferStore, { state: TransferState.STARTED });
@@ -170,7 +170,7 @@ describe("Provider — Transfer endpoints (§10.2)", () => {
 		});
 	});
 
-	describe("POST /dsp/transfers/:providerPid/termination — terminate transfer", () => {
+	describe("POST /dsp/transfers/:providerPid/termination - terminate transfer", () => {
 		it("transitions STARTED → TERMINATED", async () => {
 			const { app, xferStore } = makeApp();
 			seedTransfer(xferStore, { state: TransferState.STARTED });

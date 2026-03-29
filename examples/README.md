@@ -20,7 +20,7 @@ The example exercises every layer of the library in a realistic sequence:
 
 | Step | Actor | Action | Resulting state |
 |------|-------|--------|-----------------|
-| 1 | Consumer | Requests the Provider catalog | — |
+| 1 | Consumer | Requests the Provider catalog | - |
 | 2 | Consumer | Sends `ContractRequestMessage` | REQUESTED |
 | 3 | Provider hook | `onNegotiationRequested` → `sendCounterOffer` | OFFERED |
 | 4 | Consumer hook | `onOfferReceived` → `acceptNegotiation` | ACCEPTED |

@@ -139,7 +139,7 @@ async function main() {
 	// Guard against an uncaught hook error leaving the process hanging
 	const flowTimeout = setTimeout(() => {
 		rejectFlow(
-			new Error("Flow timed out after 15s — a hook may have thrown."),
+			new Error("Flow timed out after 15s - a hook may have thrown."),
 		);
 	}, 15_000);
 
@@ -320,7 +320,7 @@ async function main() {
 
 				/**
 				 * Provider sent ContractNegotiationEventMessage with eventType=FINALIZED.
-				 * Negotiation is complete — Consumer now requests a data transfer.
+				 * Negotiation is complete - Consumer now requests a data transfer.
 				 */
 				onNegotiationFinalized: async (negotiation) => {
 					log.consumer(
@@ -338,7 +338,7 @@ async function main() {
 
 			transfer: {
 				/**
-				 * Provider started the transfer — data channel credentials are available.
+				 * Provider started the transfer - data channel credentials are available.
 				 * Consumer "downloads" the data (simulated).
 				 */
 				onTransferStarted: async (transfer) => {
@@ -389,14 +389,14 @@ async function main() {
 
 	console.log("\n" + "═".repeat(66));
 	console.log(
-		`${BOLD}   express-dataspace-protocol  —  END-TO-END DSP EXAMPLE${R}`,
+		`${BOLD}   express-dataspace-protocol  -  END-TO-END DSP EXAMPLE${R}`,
 	);
 	console.log("═".repeat(66));
 
 	step(1, "Consumer requests the Provider catalog");
 	const catalog = await consumer.catalog.requestCatalog(PROVIDER_BASE);
 	const datasets = catalog.dataset ?? [];
-	log.consumer(`Catalog received — ${datasets.length} dataset(s):`);
+	log.consumer(`Catalog received - ${datasets.length} dataset(s):`);
 	for (const d of datasets as Array<Record<string, unknown>>) {
 		log.consumer(`  •  [${d["@id"]}]  ${d["name"] ?? d["@id"]}`);
 	}

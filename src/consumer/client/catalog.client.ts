@@ -42,7 +42,7 @@ export class DspClientError extends Error {
 
 export function makeCatalogClient(deps: CatalogClientDeps) {
 	/**
-	 * POST <providerBase>/catalog/request — §6.2.1
+	 * POST <providerBase>/catalog/request - §6.2.1
 	 */
 	async function requestCatalog(
 		providerBaseUrl: string,
@@ -62,7 +62,7 @@ export function makeCatalogClient(deps: CatalogClientDeps) {
 	}
 
 	/**
-	 * GET <providerBase>/catalog/datasets/:id — §6.2.2
+	 * GET <providerBase>/catalog/datasets/:id - §6.2.2
 	 */
 	async function getDataset(
 		providerBaseUrl: string,

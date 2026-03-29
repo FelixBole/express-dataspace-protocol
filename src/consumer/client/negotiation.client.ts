@@ -50,7 +50,7 @@ export function makeNegotiationClient(deps: NegotiationClientDeps) {
 	}
 
 	/**
-	 * POST <providerBase>/negotiations/request — §8.2.2
+	 * POST <providerBase>/negotiations/request - §8.2.2
 	 * Initiate a new contract negotiation.
 	 */
 	async function requestNegotiation(
@@ -93,7 +93,7 @@ export function makeNegotiationClient(deps: NegotiationClientDeps) {
 	}
 
 	/**
-	 * POST <providerBase>/negotiations/:providerPid/request — §8.2.3
+	 * POST <providerBase>/negotiations/:providerPid/request - §8.2.3
 	 * Consumer makes a counter-offer on an existing negotiation.
 	 */
 	async function counterOffer(
@@ -108,7 +108,7 @@ export function makeNegotiationClient(deps: NegotiationClientDeps) {
 			providerPid,
 			consumerPid,
 			offer,
-			callbackAddress: "", // provider already has it — send empty per spec (optional field here)
+			callbackAddress: "", // provider already has it - send empty per spec (optional field here)
 		};
 
 		await dspPost(
@@ -132,7 +132,7 @@ export function makeNegotiationClient(deps: NegotiationClientDeps) {
 	}
 
 	/**
-	 * POST <providerBase>/negotiations/:providerPid/events — §8.2.4
+	 * POST <providerBase>/negotiations/:providerPid/events - §8.2.4
 	 * Consumer sends ACCEPTED event.
 	 */
 	async function acceptNegotiation(
@@ -166,7 +166,7 @@ export function makeNegotiationClient(deps: NegotiationClientDeps) {
 	}
 
 	/**
-	 * POST <providerBase>/negotiations/:providerPid/agreement/verification — §8.2.5
+	 * POST <providerBase>/negotiations/:providerPid/agreement/verification - §8.2.5
 	 * Consumer verifies the agreement.
 	 */
 	async function verifyAgreement(
@@ -199,7 +199,7 @@ export function makeNegotiationClient(deps: NegotiationClientDeps) {
 	}
 
 	/**
-	 * POST <providerBase>/negotiations/:providerPid/termination — §8.2.6
+	 * POST <providerBase>/negotiations/:providerPid/termination - §8.2.6
 	 */
 	async function terminateNegotiation(
 		providerBaseUrl: string,

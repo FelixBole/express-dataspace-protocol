@@ -9,7 +9,7 @@ function makeApp(versionEntry: VersionEntry) {
 	return app;
 }
 
-describe("Provider — /.well-known/dspace-version", () => {
+describe("Provider - /.well-known/dspace-version", () => {
 	const versionEntry: VersionEntry = {
 		version: "2025-1",
 		path: "/dsp",

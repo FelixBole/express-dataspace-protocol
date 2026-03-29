@@ -32,7 +32,7 @@ function makeTestApp() {
 
 const app = makeTestApp();
 
-describe("Provider — Catalog endpoints", () => {
+describe("Provider - Catalog endpoints", () => {
 	describe("POST /dsp/catalog/request", () => {
 		it("returns 200 with a Catalog when no filter is provided", async () => {
 			const res = await request(app)

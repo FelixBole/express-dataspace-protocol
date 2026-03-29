@@ -40,8 +40,8 @@ function seedTransfer(
 	return transfer;
 }
 
-describe("Consumer — Transfer callback endpoints (§10.3)", () => {
-	describe("POST /transfers/:consumerPid/start — receive start", () => {
+describe("Consumer - Transfer callback endpoints (§10.3)", () => {
+	describe("POST /transfers/:consumerPid/start - receive start", () => {
 		it("transitions REQUESTED → STARTED on start message", async () => {
 			const { app, xferStore } = makeApp();
 			seedTransfer(xferStore, { state: TransferState.REQUESTED });
@@ -99,7 +99,7 @@ describe("Consumer — Transfer callback endpoints (§10.3)", () => {
 		});
 	});
 
-	describe("POST /transfers/:consumerPid/completion — receive completion", () => {
+	describe("POST /transfers/:consumerPid/completion - receive completion", () => {
 		it("transitions STARTED → COMPLETED", async () => {
 			const { app, xferStore } = makeApp();
 			seedTransfer(xferStore, { state: TransferState.STARTED });
@@ -138,7 +138,7 @@ describe("Consumer — Transfer callback endpoints (§10.3)", () => {
 		});
 	});
 
-	describe("POST /transfers/:consumerPid/suspension — receive suspension", () => {
+	describe("POST /transfers/:consumerPid/suspension - receive suspension", () => {
 		it("transitions STARTED → SUSPENDED", async () => {
 			const { app, xferStore } = makeApp();
 			seedTransfer(xferStore, { state: TransferState.STARTED });
@@ -161,7 +161,7 @@ describe("Consumer — Transfer callback endpoints (§10.3)", () => {
 		});
 	});
 
-	describe("POST /transfers/:consumerPid/termination — receive termination", () => {
+	describe("POST /transfers/:consumerPid/termination - receive termination", () => {
 		it("transitions STARTED → TERMINATED", async () => {
 			const { app, xferStore } = makeApp();
 			seedTransfer(xferStore, { state: TransferState.STARTED });

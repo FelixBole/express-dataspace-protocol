@@ -157,10 +157,10 @@ describe("Transfer State Machine", () => {
 	});
 
 	// ---------------------------------------------------------------------------
-	// nextTransferState — happy paths
+	// nextTransferState - happy paths
 	// ---------------------------------------------------------------------------
 
-	describe("nextTransferState() — valid transitions", () => {
+	describe("nextTransferState() - valid transitions", () => {
 		it("returns REQUESTED when consumer initiates", () => {
 			expect(
 				nextTransferState(null, "TransferRequestMessage", "CONSUMER"),
@@ -219,10 +219,10 @@ describe("Transfer State Machine", () => {
 	});
 
 	// ---------------------------------------------------------------------------
-	// nextTransferState — error paths
+	// nextTransferState - error paths
 	// ---------------------------------------------------------------------------
 
-	describe("nextTransferState() — invalid transitions", () => {
+	describe("nextTransferState() - invalid transitions", () => {
 		it("throws InvalidTransferTransitionError on bad transition", () => {
 			expect(() =>
 				nextTransferState(

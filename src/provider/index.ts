@@ -77,7 +77,7 @@ export interface DspProviderOptions {
 
 	/**
 	 * Optional hooks fired after each inbound Consumer message is processed.
-	 * Use these to run business logic in response to protocol events — e.g.
+	 * Use these to run business logic in response to protocol events - e.g.
 	 * call `provider.negotiation.sendAgreement()` inside `onNegotiationAccepted`.
 	 *
 	 * Hooks are fire-and-forget: the HTTP response is already sent before they
@@ -106,7 +106,7 @@ export interface DspProvider {
 	router: Router;
 
 	/**
-	 * Mount this at root (not under the base path) — §4.3 requires the
+	 * Mount this at root (not under the base path) - §4.3 requires the
 	 * well-known endpoint to be unversioned and unauthenticated.
 	 */
 	wellKnownRouter: Router;

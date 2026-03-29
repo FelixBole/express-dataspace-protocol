@@ -90,7 +90,7 @@ function badTransition(res: Response, err: InvalidTransferTransitionError) {
 
 export function makeTransferHandlers(deps: TransferHandlerDeps) {
 	/**
-	 * GET /transfers/:providerPid — §10.2.1
+	 * GET /transfers/:providerPid - §10.2.1
 	 */
 	async function getTransferProcess(
 		req: Request,
@@ -112,7 +112,7 @@ export function makeTransferHandlers(deps: TransferHandlerDeps) {
 	}
 
 	/**
-	 * POST /transfers/request — §10.2.2 — Consumer initiates transfer
+	 * POST /transfers/request - §10.2.2 - Consumer initiates transfer
 	 */
 	async function requestTransfer(
 		req: Request,
@@ -156,7 +156,7 @@ export function makeTransferHandlers(deps: TransferHandlerDeps) {
 	}
 
 	/**
-	 * POST /transfers/:providerPid/start — §10.2.3
+	 * POST /transfers/:providerPid/start - §10.2.3
 	 * Consumer sends TransferStartMessage to restart after suspension.
 	 */
 	async function startTransfer(
@@ -201,7 +201,7 @@ export function makeTransferHandlers(deps: TransferHandlerDeps) {
 	}
 
 	/**
-	 * POST /transfers/:providerPid/completion — §10.2.4
+	 * POST /transfers/:providerPid/completion - §10.2.4
 	 */
 	async function completeTransfer(
 		req: Request,
@@ -243,7 +243,7 @@ export function makeTransferHandlers(deps: TransferHandlerDeps) {
 	}
 
 	/**
-	 * POST /transfers/:providerPid/suspension — §10.2.6
+	 * POST /transfers/:providerPid/suspension - §10.2.6
 	 */
 	async function suspendTransfer(
 		req: Request,
@@ -287,7 +287,7 @@ export function makeTransferHandlers(deps: TransferHandlerDeps) {
 	}
 
 	/**
-	 * POST /transfers/:providerPid/termination — §10.2.5
+	 * POST /transfers/:providerPid/termination - §10.2.5
 	 */
 	async function terminateTransfer(
 		req: Request,
@@ -331,7 +331,7 @@ export function makeTransferHandlers(deps: TransferHandlerDeps) {
 	}
 
 	// -------------------------------------------------------------------------
-	// Provider-initiated helpers — update local state AND notify the Consumer
+	// Provider-initiated helpers - update local state AND notify the Consumer
 	// via their callbackAddress. All methods are safe to await in business logic.
 	// -------------------------------------------------------------------------
 

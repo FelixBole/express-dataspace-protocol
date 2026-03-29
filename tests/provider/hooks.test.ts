@@ -8,7 +8,7 @@
  *  3. The entity passed to the hook reflects the new DSP state.
  *
  * Provider-initiated outbound helpers (sendAgreement, providerStartTransfer,
- * etc.) are NOT tested here — they involve outbound fetch calls. Those helpers
+ * etc.) are NOT tested here - they involve outbound fetch calls. Those helpers
  * are exercised elsewhere. Hooks for the inbound handlers are the focus.
  */
 
@@ -93,8 +93,8 @@ const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
 // Negotiation hooks
 // ---------------------------------------------------------------------------
 
-describe("Provider — negotiation hooks", () => {
-	describe("onNegotiationRequested — POST /dsp/negotiations/request", () => {
+describe("Provider - negotiation hooks", () => {
+	describe("onNegotiationRequested - POST /dsp/negotiations/request", () => {
 		it("is called with state=REQUESTED and the Consumer offer terms", async () => {
 			const hook = jest.fn();
 			const { app } = makeApp({ onNegotiationRequested: hook });
@@ -128,7 +128,7 @@ describe("Provider — negotiation hooks", () => {
 		});
 	});
 
-	describe("onNegotiationRequested — POST /dsp/negotiations/:providerPid/request (counter-request)", () => {
+	describe("onNegotiationRequested - POST /dsp/negotiations/:providerPid/request (counter-request)", () => {
 		it("is called with state=REQUESTED and updated offer terms", async () => {
 			const hook = jest.fn();
 			const { app, negStore } = makeApp({ onNegotiationRequested: hook });
@@ -161,7 +161,7 @@ describe("Provider — negotiation hooks", () => {
 		});
 	});
 
-	describe("onNegotiationAccepted — POST /dsp/negotiations/:providerPid/events (ACCEPTED)", () => {
+	describe("onNegotiationAccepted - POST /dsp/negotiations/:providerPid/events (ACCEPTED)", () => {
 		it("is called with state=ACCEPTED", async () => {
 			const hook = jest.fn();
 			const { app, negStore } = makeApp({ onNegotiationAccepted: hook });
@@ -187,7 +187,7 @@ describe("Provider — negotiation hooks", () => {
 		});
 	});
 
-	describe("onAgreementVerified — POST /dsp/negotiations/:providerPid/agreement/verification", () => {
+	describe("onAgreementVerified - POST /dsp/negotiations/:providerPid/agreement/verification", () => {
 		it("is called with state=VERIFIED", async () => {
 			const hook = jest.fn();
 			const { app, negStore } = makeApp({ onAgreementVerified: hook });
@@ -214,7 +214,7 @@ describe("Provider — negotiation hooks", () => {
 		});
 	});
 
-	describe("onNegotiationTerminated — POST /dsp/negotiations/:providerPid/termination", () => {
+	describe("onNegotiationTerminated - POST /dsp/negotiations/:providerPid/termination", () => {
 		it("is called with state=TERMINATED", async () => {
 			const hook = jest.fn();
 			const { app, negStore } = makeApp({
@@ -297,8 +297,8 @@ describe("Provider — negotiation hooks", () => {
 // Transfer hooks
 // ---------------------------------------------------------------------------
 
-describe("Provider — transfer hooks", () => {
-	describe("onTransferRequested — POST /dsp/transfers/request", () => {
+describe("Provider - transfer hooks", () => {
+	describe("onTransferRequested - POST /dsp/transfers/request", () => {
 		it("is called with state=REQUESTED", async () => {
 			const hook = jest.fn();
 			const { app } = makeApp(undefined, { onTransferRequested: hook });
@@ -326,7 +326,7 @@ describe("Provider — transfer hooks", () => {
 		});
 	});
 
-	describe("onTransferRestartedByConsumer — POST /dsp/transfers/:providerPid/start", () => {
+	describe("onTransferRestartedByConsumer - POST /dsp/transfers/:providerPid/start", () => {
 		it("is called with state=STARTED when Consumer restarts after suspension", async () => {
 			const hook = jest.fn();
 			const { app, xferStore } = makeApp(undefined, {
@@ -353,7 +353,7 @@ describe("Provider — transfer hooks", () => {
 		});
 	});
 
-	describe("onTransferCompletedByConsumer — POST /dsp/transfers/:providerPid/completion", () => {
+	describe("onTransferCompletedByConsumer - POST /dsp/transfers/:providerPid/completion", () => {
 		it("is called with state=COMPLETED", async () => {
 			const hook = jest.fn();
 			const { app, xferStore } = makeApp(undefined, {
@@ -380,7 +380,7 @@ describe("Provider — transfer hooks", () => {
 		});
 	});
 
-	describe("onTransferSuspendedByConsumer — POST /dsp/transfers/:providerPid/suspension", () => {
+	describe("onTransferSuspendedByConsumer - POST /dsp/transfers/:providerPid/suspension", () => {
 		it("is called with state=SUSPENDED", async () => {
 			const hook = jest.fn();
 			const { app, xferStore } = makeApp(undefined, {
@@ -407,7 +407,7 @@ describe("Provider — transfer hooks", () => {
 		});
 	});
 
-	describe("onTransferTerminatedByConsumer — POST /dsp/transfers/:providerPid/termination", () => {
+	describe("onTransferTerminatedByConsumer - POST /dsp/transfers/:providerPid/termination", () => {
 		it("is called with state=TERMINATED", async () => {
 			const hook = jest.fn();
 			const { app, xferStore } = makeApp(undefined, {

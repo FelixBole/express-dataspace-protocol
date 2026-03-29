@@ -38,7 +38,7 @@ export class DiskCatalogStore implements CatalogStore {
 		return catalog.dataset?.find((d) => d["@id"] === id) ?? null;
 	}
 
-	/** Seed helper — writes a full catalog to disk (useful in tests). */
+	/** Seed helper - writes a full catalog to disk (useful in tests). */
 	async seed(catalog: Catalog): Promise<void> {
 		await fs.writeFile(
 			this.filePath,

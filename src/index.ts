@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// express-dataspace-protocol — public API
+// express-dataspace-protocol - public API
 // ---------------------------------------------------------------------------
 
 // Factories
@@ -30,7 +30,6 @@ export type {
 	VersionResponse,
 	VersionEntry,
 	AuthInfo,
-	DspErrorBody,
 	DspActor,
 	// Catalog
 	Catalog,

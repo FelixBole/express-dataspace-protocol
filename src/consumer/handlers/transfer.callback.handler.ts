@@ -53,7 +53,7 @@ export function makeConsumerTransferHandlers(
 	deps: ConsumerTransferHandlerDeps,
 ) {
 	/**
-	 * POST /transfers/:consumerPid/start — §10.3.2
+	 * POST /transfers/:consumerPid/start - §10.3.2
 	 * Provider signals transfer has started (PULL: includes dataAddress).
 	 */
 	async function receiveStart(
@@ -98,7 +98,7 @@ export function makeConsumerTransferHandlers(
 	}
 
 	/**
-	 * POST /transfers/:consumerPid/completion — §10.3.3
+	 * POST /transfers/:consumerPid/completion - §10.3.3
 	 */
 	async function receiveCompletion(
 		req: Request,
@@ -140,7 +140,7 @@ export function makeConsumerTransferHandlers(
 	}
 
 	/**
-	 * POST /transfers/:consumerPid/termination — §10.3.4
+	 * POST /transfers/:consumerPid/termination - §10.3.4
 	 */
 	async function receiveTermination(
 		req: Request,
@@ -184,7 +184,7 @@ export function makeConsumerTransferHandlers(
 	}
 
 	/**
-	 * POST /transfers/:consumerPid/suspension — §10.3.5
+	 * POST /transfers/:consumerPid/suspension - §10.3.5
 	 */
 	async function receiveSuspension(
 		req: Request,

@@ -37,8 +37,8 @@ function seedNegotiation(
 	return negotiation;
 }
 
-describe("Provider — Negotiation endpoints (§8.2)", () => {
-	describe("POST /dsp/negotiations/request — initiate negotiation", () => {
+describe("Provider - Negotiation endpoints (§8.2)", () => {
+	describe("POST /dsp/negotiations/request - initiate negotiation", () => {
 		it("creates a new negotiation and returns 201", async () => {
 			const { app } = makeApp();
 
@@ -140,7 +140,7 @@ describe("Provider — Negotiation endpoints (§8.2)", () => {
 		});
 	});
 
-	describe("GET /dsp/negotiations/:providerPid — get negotiation", () => {
+	describe("GET /dsp/negotiations/:providerPid - get negotiation", () => {
 		it("returns 200 with negotiation details", async () => {
 			const { app, negStore } = makeApp();
 			seedNegotiation(negStore);
@@ -168,7 +168,7 @@ describe("Provider — Negotiation endpoints (§8.2)", () => {
 		});
 	});
 
-	describe("POST /dsp/negotiations/:providerPid/request — counter-offer", () => {
+	describe("POST /dsp/negotiations/:providerPid/request - counter-offer", () => {
 		it("returns 200 and updates state to REQUESTED when from OFFERED", async () => {
 			const { app, negStore } = makeApp();
 			seedNegotiation(negStore, { state: NegotiationState.OFFERED });
@@ -232,7 +232,7 @@ describe("Provider — Negotiation endpoints (§8.2)", () => {
 		});
 	});
 
-	describe("POST /dsp/negotiations/:providerPid/events — consumer accept", () => {
+	describe("POST /dsp/negotiations/:providerPid/events - consumer accept", () => {
 		it("transitions OFFERED → ACCEPTED on accept event", async () => {
 			const { app, negStore } = makeApp();
 			seedNegotiation(negStore, { state: NegotiationState.OFFERED });
@@ -273,7 +273,7 @@ describe("Provider — Negotiation endpoints (§8.2)", () => {
 		});
 	});
 
-	describe("POST /dsp/negotiations/:providerPid/agreement/verification — verify", () => {
+	describe("POST /dsp/negotiations/:providerPid/agreement/verification - verify", () => {
 		it("transitions AGREED → VERIFIED on verification", async () => {
 			const { app, negStore } = makeApp();
 			seedNegotiation(negStore, { state: NegotiationState.AGREED });
@@ -296,7 +296,7 @@ describe("Provider — Negotiation endpoints (§8.2)", () => {
 		});
 	});
 
-	describe("POST /dsp/negotiations/:providerPid/termination — terminate", () => {
+	describe("POST /dsp/negotiations/:providerPid/termination - terminate", () => {
 		it("transitions REQUESTED → TERMINATED on termination", async () => {
 			const { app, negStore } = makeApp();
 			seedNegotiation(negStore, { state: NegotiationState.REQUESTED });

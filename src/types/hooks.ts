@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Hook interfaces — user-supplied callbacks fired after each inbound DSP
+// Hook interfaces - user-supplied callbacks fired after each inbound DSP
 // message is validated, state-transitioned, and stored. All hooks are
 // optional and fire-and-forget: the HTTP response is already sent before
 // the hook runs. Errors thrown inside a hook are caught and logged but do
@@ -30,14 +30,14 @@ export type TransferHook = (transfer: TransferProcess) => void | Promise<void>;
  * Hooks for inbound Consumer→Provider negotiation messages.
  *
  * The two most action-critical hooks are:
- * - `onNegotiationAccepted` — Consumer accepted your offer; call
+ * - `onNegotiationAccepted` - Consumer accepted your offer; call
  *   `provider.negotiation.sendAgreement()` here.
- * - `onAgreementVerified` — Consumer verified the agreement; call
+ * - `onAgreementVerified` - Consumer verified the agreement; call
  *   `provider.negotiation.finalizeNegotiation()` here.
  */
 export interface ProviderNegotiationHooks {
 	/**
-	 * Consumer sent `ContractRequestMessage` **without** a `providerPid` — a
+	 * Consumer sent `ContractRequestMessage` **without** a `providerPid` - a
 	 * brand-new negotiation. State is now `REQUESTED`. The
 	 * `negotiation.offer` field contains the Consumer's requested terms.
 	 *
@@ -47,19 +47,19 @@ export interface ProviderNegotiationHooks {
 	onNegotiationRequested?: NegotiationHook;
 
 	/**
-	 * Consumer sent `ContractRequestMessage` **with** a `providerPid` —
+	 * Consumer sent `ContractRequestMessage` **with** a `providerPid` -
 	 * re-requesting on an existing negotiation (e.g. after receiving a
 	 * Provider counter-offer). State advances back to `REQUESTED`.
 	 * The `negotiation.offer` field contains the Consumer's updated terms.
 	 *
-	 * Typical response: same as `onNegotiationRequested` — inspect the new
+	 * Typical response: same as `onNegotiationRequested` - inspect the new
 	 * offer and call `sendCounterOffer()` or `sendAgreement()`.
 	 */
 	onNegotiationReRequested?: NegotiationHook;
 
 	/**
 	 * Consumer sent `ContractNegotiationEventMessage` with `eventType=ACCEPTED`.
-	 * State is now `ACCEPTED` — the Consumer has accepted your offer.
+	 * State is now `ACCEPTED` - the Consumer has accepted your offer.
 	 *
 	 * **Most common action:** call `provider.negotiation.sendAgreement()`.
 	 */
@@ -67,7 +67,7 @@ export interface ProviderNegotiationHooks {
 
 	/**
 	 * Consumer sent `ContractAgreementVerificationMessage`. State is now
-	 * `VERIFIED` — the Consumer has verified your agreement.
+	 * `VERIFIED` - the Consumer has verified your agreement.
 	 *
 	 * **Most common action:** call `provider.negotiation.finalizeNegotiation()`.
 	 */
@@ -75,7 +75,7 @@ export interface ProviderNegotiationHooks {
 
 	/**
 	 * Consumer sent `ContractNegotiationTerminationMessage`. State is now
-	 * `TERMINATED`. Notification only — no protocol response is expected.
+	 * `TERMINATED`. Notification only - no protocol response is expected.
 	 */
 	onNegotiationTerminated?: NegotiationHook;
 }
@@ -84,7 +84,7 @@ export interface ProviderNegotiationHooks {
  * Hooks for inbound Consumer→Provider transfer messages.
  *
  * The most action-critical hook is:
- * - `onTransferRequested` — Consumer requested a transfer; call
+ * - `onTransferRequested` - Consumer requested a transfer; call
  *   `provider.transfer.providerStartTransfer()` here.
  */
 export interface ProviderTransferHooks {
@@ -126,9 +126,9 @@ export interface ProviderTransferHooks {
  * Hooks for inbound Provider→Consumer negotiation messages.
  *
  * The most action-critical hooks are:
- * - `onOfferReceived` — Provider sent an offer; decide whether to
+ * - `onOfferReceived` - Provider sent an offer; decide whether to
  *   `consumer.negotiation.acceptOffer()` or counter-request.
- * - `onAgreementReceived` — Provider sent an agreement; call
+ * - `onAgreementReceived` - Provider sent an agreement; call
  *   `consumer.negotiation.verifyAgreement()`.
  */
 export interface ConsumerNegotiationHooks {
@@ -152,7 +152,7 @@ export interface ConsumerNegotiationHooks {
 
 	/**
 	 * Provider sent `ContractNegotiationEventMessage` with `eventType=FINALIZED`.
-	 * State is now `FINALIZED`. The negotiation is complete — the agreement
+	 * State is now `FINALIZED`. The negotiation is complete - the agreement
 	 * in `negotiation.agreement` is now live. Persist or act on it.
 	 */
 	onNegotiationFinalized?: NegotiationHook;
@@ -168,7 +168,7 @@ export interface ConsumerNegotiationHooks {
  * Hooks for inbound Provider→Consumer transfer messages.
  *
  * The most action-critical hook is:
- * - `onTransferStarted` — Provider started the transfer; begin consuming
+ * - `onTransferStarted` - Provider started the transfer; begin consuming
  *   data. For PULL transfers, `transfer.dataAddress` contains the endpoint.
  */
 export interface ConsumerTransferHooks {

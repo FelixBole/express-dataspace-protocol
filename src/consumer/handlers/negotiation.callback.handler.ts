@@ -55,7 +55,7 @@ export function makeConsumerNegotiationHandlers(
 	deps: ConsumerNegotiationHandlerDeps,
 ) {
 	/**
-	 * GET /negotiations/:consumerPid — §8.3.2
+	 * GET /negotiations/:consumerPid - §8.3.2
 	 * Provider reads Consumer's negotiation state.
 	 */
 	async function getNegotiation(
@@ -78,7 +78,7 @@ export function makeConsumerNegotiationHandlers(
 	}
 
 	/**
-	 * POST /negotiations/offers — §8.3.3
+	 * POST /negotiations/offers - §8.3.3
 	 * Provider initiates a new negotiation with an offer. Consumer must create entry.
 	 */
 	async function receiveInitialOffer(
@@ -121,7 +121,7 @@ export function makeConsumerNegotiationHandlers(
 	}
 
 	/**
-	 * POST /negotiations/:consumerPid/offers — §8.3.4
+	 * POST /negotiations/:consumerPid/offers - §8.3.4
 	 * Provider makes a counter-offer on existing negotiation.
 	 */
 	async function receiveOffer(
@@ -166,7 +166,7 @@ export function makeConsumerNegotiationHandlers(
 	}
 
 	/**
-	 * POST /negotiations/:consumerPid/agreement — §8.3.5
+	 * POST /negotiations/:consumerPid/agreement - §8.3.5
 	 * Provider sends agreement; Consumer transitions to AGREED.
 	 */
 	async function receiveAgreement(
@@ -211,7 +211,7 @@ export function makeConsumerNegotiationHandlers(
 	}
 
 	/**
-	 * POST /negotiations/:consumerPid/events — §8.3.6
+	 * POST /negotiations/:consumerPid/events - §8.3.6
 	 * Provider sends FINALIZED event.
 	 */
 	async function receiveEvent(
@@ -268,7 +268,7 @@ export function makeConsumerNegotiationHandlers(
 	}
 
 	/**
-	 * POST /negotiations/:consumerPid/termination — §8.3.7
+	 * POST /negotiations/:consumerPid/termination - §8.3.7
 	 * Provider terminates.
 	 */
 	async function receiveTermination(
