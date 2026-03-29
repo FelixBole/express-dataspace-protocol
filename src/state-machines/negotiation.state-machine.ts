@@ -57,6 +57,13 @@ const TRANSITIONS: Record<NegotiationMessageType, TransitionRule[]> = {
 		},
 	],
 	ContractAgreementMessage: [
+		// Provider agrees directly on a Consumer request (REQUESTED → AGREED, §7.1.2)
+		{
+			from: NegotiationState.REQUESTED,
+			actor: "PROVIDER",
+			to: NegotiationState.AGREED,
+		},
+		// Provider agrees after Consumer accepted Provider's offer (ACCEPTED → AGREED)
 		{
 			from: NegotiationState.ACCEPTED,
 			actor: "PROVIDER",

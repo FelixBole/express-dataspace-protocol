@@ -101,6 +101,16 @@ describe("Negotiation State Machine", () => {
 			).toBe(true);
 		});
 
+		it("allows PROVIDER to send agreement directly after REQUESTED (§7.1.2 shortcut)", () => {
+			expect(
+				isValidNegotiationTransition(
+					NegotiationState.REQUESTED,
+					"ContractAgreementMessage",
+					"PROVIDER",
+				),
+			).toBe(true);
+		});
+
 		it("allows CONSUMER to verify agreement after AGREED", () => {
 			expect(
 				isValidNegotiationTransition(
@@ -197,10 +207,20 @@ describe("Negotiation State Machine", () => {
 			).toBe(NegotiationState.ACCEPTED);
 		});
 
-		it("returns AGREED when provider sends agreement", () => {
+		it("returns AGREED when provider sends agreement from ACCEPTED", () => {
 			expect(
 				nextNegotiationState(
 					NegotiationState.ACCEPTED,
+					"ContractAgreementMessage",
+					"PROVIDER",
+				),
+			).toBe(NegotiationState.AGREED);
+		});
+
+		it("returns AGREED when provider sends agreement directly from REQUESTED", () => {
+			expect(
+				nextNegotiationState(
+					NegotiationState.REQUESTED,
 					"ContractAgreementMessage",
 					"PROVIDER",
 				),
@@ -243,7 +263,7 @@ describe("Negotiation State Machine", () => {
 	// ---------------------------------------------------------------------------
 
 	describe("nextNegotiationState() - invalid transitions", () => {
-		it("throws InvalidNegotiationTransitionError on bad transition", () => {
+		it("throws InvalidNegotiationTransitionError when Provider sends agreement from null state", () => {
 			expect(() =>
 				nextNegotiationState(
 					null,
